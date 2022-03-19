@@ -9,12 +9,12 @@ import (
 )
 
 func TunnelServer(tunnelServerPort int) {
-	listener, err := net.Listen("tcp", "localhost:9999")
+	listener, err := net.Listen("tcp", ":8585")
 	if err != nil {
-		fmt.Println("Failed to start listener on 9999", err.Error())
+		fmt.Println("Failed to start listener on 8585", err.Error())
 		return
 	}
-	fmt.Println("Starting listener on 9999")
+	fmt.Println("Starting listener on 8585")
 	for {
 		conn, err := listener.Accept()
 		if err != nil {
