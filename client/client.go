@@ -58,7 +58,7 @@ func makeRequest(data []byte, localPort int) ([]byte, error) {
 }
 
 func createControlConnection(subdomain string) (*net.TCPConn, error) {
-	server, _ := net.ResolveTCPAddr("tcp", "localhost:9999" /*subdomain+".jtunnel.net:8585"*/)
+	server, _ := net.ResolveTCPAddr("tcp", subdomain+".jtunnel.net:8585")
 	client, _ := net.ResolveTCPAddr("tcp", ":")
 	conn, err := net.DialTCP("tcp", client, server)
 	return conn, err
@@ -67,7 +67,7 @@ func createControlConnection(subdomain string) (*net.TCPConn, error) {
 func handleData(conn *net.TCPConn, localPort int, subdomain string) {
 	for {
 		if !registered {
-			err := proto.SendMessage(proto.NewMessage("localhost:8080" /*subdomain+".jtunnel.net"*/, uuid.New().String(), "register", make([]byte, 0)), conn)
+			err := proto.SendMessage(proto.NewMessage(subdomain+".jtunnel.net", uuid.New().String(), "register", make([]byte, 0)), conn)
 			if err != nil {
 				fmt.Println("Unable to handleData ", err.Error())
 			}
@@ -82,7 +82,7 @@ func handleData(conn *net.TCPConn, localPort int, subdomain string) {
 			fmt.Println("Unable to make local request", err.Error())
 			return
 		}
-		message = proto.NewMessage("localhost:8080" /*subdomain+".jtunnel.net"*/, message.MessageId, "response", resp)
+		message = proto.NewMessage(subdomain+".jtunnel.net", message.MessageId, "response", resp)
 		err = proto.SendMessage(message, conn)
 		if err != nil {
 			fmt.Println("Unable to send response to tunnel server ", err.Error())
