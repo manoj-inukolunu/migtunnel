@@ -41,11 +41,9 @@ func handleTunnelConnection(conn net.Conn) {
 			AddTunnelConnection(conn, id)
 		} else {
 			//fmt.Println("Message Received From Client is ", message)
-			ctx := GetHttpConnection(message.MessageId)
-			if ctx != nil {
-				ctx.Conn().Write(message.Data)
-				fmt.Println("Written to http Context")
-				RemoveHttpConnection(message.MessageId)
+			ctx := GetHttpConn(message.MessageId)
+			if ctx {
+				AddRespHttpData(message.MessageId, message.Data)
 			} else {
 				log.Println("No ctx Found to write to")
 			}

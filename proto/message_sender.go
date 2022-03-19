@@ -1,13 +1,13 @@
 package proto
 
 import (
-	"encoding/gob"
+	"encoding/json"
 	"fmt"
 	"net"
 )
 
 func SendMessage(mess *Message, tunnel net.Conn) error {
-	enc := gob.NewEncoder(tunnel)
+	enc := json.NewEncoder(tunnel)
 	err := enc.Encode(&mess)
 	if err != nil {
 		fmt.Println("Unable to encode message ", err.Error())
@@ -16,7 +16,7 @@ func SendMessage(mess *Message, tunnel net.Conn) error {
 }
 
 func ReceiveMessage(tunnel net.Conn) (*Message, error) {
-	dec := gob.NewDecoder(tunnel)
+	dec := json.NewDecoder(tunnel)
 	message := &Message{}
 	err := dec.Decode(message)
 	if err != nil {

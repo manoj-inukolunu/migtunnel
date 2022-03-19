@@ -2,14 +2,14 @@ package server
 
 import (
 	"errors"
-	"github.com/valyala/fasthttp"
 	"log"
 	"net"
 	"sync"
 )
 
 var tunnelConnMap = make(map[string]net.Conn)
-var httpConnMap = make(map[string]*fasthttp.RequestCtx)
+var httpConnMap = make(map[string]bool)
+var responseByteMap = make(map[string][]byte)
 var subDomainToTunnelUUIDMap = make(map[string]string)
 var mapMutex = sync.RWMutex{}
 
@@ -19,6 +19,7 @@ func AddTunnelConnection(conn net.Conn, uuid string) {
 func RemoveHttpConnection(uuid string) {
 	mapMutex.Lock()
 	delete(httpConnMap, uuid)
+	delete(responseByteMap, uuid)
 	mapMutex.Unlock()
 }
 
@@ -26,21 +27,34 @@ func GetTunnelConnection(uuid string) net.Conn {
 	return tunnelConnMap[uuid]
 }
 
-func AddHttpConnection(ctx *fasthttp.RequestCtx, uuid string) {
+func GetHttpConn(uuid string) bool {
+	mapMutex.Lock()
+	_, ok := httpConnMap[uuid]
+	mapMutex.Unlock()
+	return ok
+}
+
+func AddHttpConnection(uuid string) {
 	log.Println("Saving ctx with id ", uuid)
 	mapMutex.Lock()
-	httpConnMap[uuid] = ctx
+	httpConnMap[uuid] = true
 	mapMutex.Unlock()
 }
 
-func GetHttpConnection(uuid string) *fasthttp.RequestCtx {
+func AddRespHttpData(uuid string, data []byte) {
 	mapMutex.Lock()
-	ctx, ok := httpConnMap[uuid]
+	responseByteMap[uuid] = data
+	mapMutex.Unlock()
+}
+
+func GetHttpConnection(uuid string) []byte {
+	mapMutex.Lock()
+	bytes, ok := responseByteMap[uuid]
 	mapMutex.Unlock()
 	if !ok {
 		return nil
 	}
-	return ctx
+	return bytes
 }
 
 func GetTunnelConnectionFromHostName(hostname string) (net.Conn, error) {
