@@ -30,7 +30,6 @@ func init() {
 					}
 					return true
 				})
-				// do stuff
 			case <-quit:
 				ticker.Stop()
 				return
