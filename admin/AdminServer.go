@@ -18,6 +18,7 @@ func StartAdminServer(port int) {
 		log.Printf("Could not start admin server on port=%s  error=%s\n", port, err)
 		panic(err)
 	}
+	fmt.Println("Started Admin Server on ", 8090)
 }
 
 func listControlConnections(writer http.ResponseWriter, request *http.Request) {

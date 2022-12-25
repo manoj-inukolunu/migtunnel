@@ -34,6 +34,12 @@ func createTunnelHandler(writer http.ResponseWriter, request *http.Request) {
 		writer.WriteHeader(400)
 		return
 	}
+	err = CreateTunnel(*message)
+	if err != nil {
+		writer.Write([]byte("Could not create tunnel" + err.Error()))
+		writer.WriteHeader(400)
+		return
+	}
 
 }
 

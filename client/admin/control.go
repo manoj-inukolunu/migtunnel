@@ -15,6 +15,10 @@ var controlConnections = sync.Map{}
 
 const controlConnectionKey = "Main"
 
+func SaveControlConnection(conn net.Conn) {
+	controlConnections.Store(controlConnectionKey, conn)
+}
+
 func CreateControlConnection(controlServer string, port int) error {
 	conn, err := net.Dial("tcp", controlServer+":"+strconv.Itoa(port))
 	controlConnections.Store(controlConnectionKey, conn)

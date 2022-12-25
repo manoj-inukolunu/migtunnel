@@ -42,6 +42,7 @@ func Start(controlServerPort int, httpServerPort int, tunnelServerPort int, admi
 }
 
 func startClientTunnelServer(port int) {
+	fmt.Println("Starting Client Tunnel Server on port", port)
 	httpListener, _ := net.Listen("tcp", "localhost:"+strconv.Itoa(port))
 	for {
 		conn, err := httpListener.Accept()
@@ -69,6 +70,7 @@ func startClientTunnelServer(port int) {
 
 func startHttpServer(port int) {
 	httpListener, _ := net.Listen("tcp", "localhost:"+strconv.Itoa(port))
+	fmt.Println("Starting http server")
 	for {
 		conn, err := httpListener.Accept()
 		if err != nil {

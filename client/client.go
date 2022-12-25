@@ -16,8 +16,9 @@ var tunnels map[string]net.Conn
 func main() {
 	ControlConnections = make(map[string]net.Conn)
 	tunnels = make(map[string]net.Conn)
-	startControlServer()
+	fmt.Println("Starting Admin Server on ", 1234)
 	go admin.StartServer(1234)
+	startControlConnection()
 
 }
 
@@ -36,11 +37,13 @@ func createLocalConnection() net.Conn {
 	return conn
 }
 
-func startControlServer() {
+func startControlConnection() {
+	fmt.Println("Starting Control connection")
 	conn, _ := net.Dial("tcp", "localhost:9999")
 	mutex := sync.Mutex{}
 	mutex.Lock()
 	ControlConnections["data"] = conn
+	admin.SaveControlConnection(conn)
 	mutex.Unlock()
 
 	for {
