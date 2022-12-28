@@ -15,7 +15,7 @@ import (
 )
 
 func Start(controlServerPort int, httpServerPort int, tunnelServerPort int, adminServerPort int) {
-	addr := "localhost:" + strconv.Itoa(controlServerPort)
+	addr := ":" + strconv.Itoa(controlServerPort)
 
 	go startHttpServer(httpServerPort)
 
@@ -43,7 +43,7 @@ func Start(controlServerPort int, httpServerPort int, tunnelServerPort int, admi
 
 func startClientTunnelServer(port int) {
 	fmt.Println("Starting Client Tunnel Server on port", port)
-	httpListener, _ := net.Listen("tcp", "localhost:"+strconv.Itoa(port))
+	httpListener, _ := net.Listen("tcp", ":"+strconv.Itoa(port))
 	for {
 		conn, err := httpListener.Accept()
 		if err != nil {

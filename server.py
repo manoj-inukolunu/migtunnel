@@ -1,5 +1,7 @@
 from flask import Flask
 from flask import request
+import json
+
 
 app = Flask(__name__)
 
@@ -10,11 +12,19 @@ def get():
   if request.method == 'POST':
     print("Received Request")
     data = request.get_data()
+    d = json.loads(data)
+    print(len(d))
+    resp = {"predictions":[]}
+    score = {
+      "score":  1 
+    }
+    for key in d['instances']:
+      resp["predictions"].append(score)
     if len(data) < 500:
       print(data)
-    return data
+    return resp
   return "GET Request"
 
 
 if __name__ == '__main__':
-  app.run(debug=True, host='0.0.0.0', port=3131)
+  app.run(debug=True, host='0.0.0.0', port=4949)
