@@ -23,7 +23,7 @@ func main() {
 }
 
 func createNewTunnel(message *proto.Message) net.Conn {
-	conn, _ := net.Dial("tcp", "localhost:2121")
+	conn, _ := net.Dial("tcp", "manoj.jtunnel.net:2121")
 	mutex := sync.Mutex{}
 	mutex.Lock()
 	tunnels[message.TunnelId] = conn
@@ -39,7 +39,7 @@ func createLocalConnection() net.Conn {
 
 func startControlConnection() {
 	fmt.Println("Starting Control connection")
-	conn, _ := net.Dial("tcp", "localhost:9999")
+	conn, _ := net.Dial("tcp", "manoj.jtunnel.net:9999")
 	mutex := sync.Mutex{}
 	mutex.Lock()
 	ControlConnections["data"] = conn
@@ -47,8 +47,11 @@ func startControlConnection() {
 	mutex.Unlock()
 
 	for {
-		message, _ := proto.ReceiveMessage(conn)
+		message, err := proto.ReceiveMessage(conn)
 		fmt.Println("Received Message", message)
+		if err != nil {
+			fmt.Println("Fail", err.Error())
+		}
 		if message.MessageType == "init-request" {
 			tunnel := createNewTunnel(message)
 			fmt.Println("Created a new Tunnel", message)

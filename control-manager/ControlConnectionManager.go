@@ -5,6 +5,7 @@ import (
 	"golang/proto"
 	"log"
 	"net"
+	"net/http"
 	"strings"
 	"sync"
 	"time"
@@ -30,6 +31,28 @@ func init() {
 					}
 					return true
 				})
+			case <-quit:
+				ticker.Stop()
+				return
+			}
+		}
+	}()
+
+	initCronitorHeartbeat()
+}
+
+func initCronitorHeartbeat() {
+	fmt.Println("Starting Cronitor Heartbeat , ticker at 60 seconds")
+	ticker := time.NewTicker(60 * time.Second)
+	quit := make(chan struct{})
+	go func() {
+		for {
+			select {
+			case <-ticker.C:
+				_, err := http.Get("https://cronitor.link/p/70f15f445cc1490ba2183404be52079c/UQZCNL")
+				if err != nil {
+					fmt.Println("Failed to send heartbeat", err.Error())
+				}
 			case <-quit:
 				ticker.Stop()
 				return

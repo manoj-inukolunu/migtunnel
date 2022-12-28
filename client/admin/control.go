@@ -16,6 +16,7 @@ var controlConnections = sync.Map{}
 const controlConnectionKey = "Main"
 
 func SaveControlConnection(conn net.Conn) {
+	fmt.Println("Saving Control Connection")
 	controlConnections.Store(controlConnectionKey, conn)
 }
 
@@ -36,6 +37,7 @@ func GetControlConnection() (net.Conn, bool) {
 func CreateTunnel(request TunnelCreateRequest) error {
 	if conn, ok := GetControlConnection(); ok {
 		proto.SendMessage(proto.NewMessage(request.HostName, "Random", "register", []byte("asdf")), conn)
+		return nil
 	}
 	return errors.New("Control Connection not found , will not be creating tunnel")
 }

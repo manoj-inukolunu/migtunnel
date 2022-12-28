@@ -30,14 +30,14 @@ func createTunnelHandler(writer http.ResponseWriter, request *http.Request) {
 	message := &TunnelCreateRequest{}
 	err := dec.Decode(message)
 	if err != nil {
-		writer.Write([]byte("Could not read request payload"))
 		writer.WriteHeader(400)
+		writer.Write([]byte("Could not read request payload"))
 		return
 	}
 	err = CreateTunnel(*message)
 	if err != nil {
-		writer.Write([]byte("Could not create tunnel" + err.Error()))
 		writer.WriteHeader(400)
+		writer.Write([]byte("Could not create tunnel" + err.Error()))
 		return
 	}
 
