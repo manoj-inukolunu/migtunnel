@@ -47,15 +47,23 @@ func startClientTunnelServer(port int) {
 	for {
 		conn, err := httpListener.Accept()
 		if err != nil {
-			log.Println("Failed to accept tunnel connection", conn)
-			panic(err)
+			log.Println("Failed to accept tunnel connection ", conn, err.Error())
+		} else {
+			go handleClientTunnelServerConnection(conn)
 		}
-		message, err := proto.ReceiveMessage(conn)
+	}
+}
 
+func handleClientTunnelServerConnection(conn net.Conn) {
+	message, err := proto.ReceiveMessage(conn)
+	if err != nil {
+		fmt.Println("Failed to receive message from tunnel connection", conn)
+		err := conn.Close()
 		if err != nil {
-			fmt.Println("Failed to receive message from tunnel connection", conn)
-			panic(err)
+			return
 		}
+		return
+	} else {
 		if message.MessageType == "init-request" {
 			log.Printf("Createing a new Tunnel %s\n", message)
 			tunnel_manager.SaveTunnelConnection(message.TunnelId, conn)
@@ -63,9 +71,15 @@ func startClientTunnelServer(port int) {
 		} else {
 			log.Println("Initial message from tunnel connection should be of type `init-request` found message ",
 				message)
-			panic(message)
+			//TODO : Check again , close the connection here?
+			err := conn.Close()
+			if err != nil {
+				return
+			}
+			return
 		}
 	}
+
 }
 
 func startHttpServer(port int) {
