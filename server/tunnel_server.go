@@ -1,6 +1,7 @@
 package server
 
 import (
+	"crypto/tls"
 	"fmt"
 	"github.com/google/uuid"
 	"github.com/inconshreveable/go-vhost"
@@ -14,21 +15,40 @@ import (
 	"strconv"
 )
 
-func Start(controlServerPort int, httpServerPort int, tunnelServerPort int, adminServerPort int) {
-	addr := ":" + strconv.Itoa(controlServerPort)
+type TunnelServerConfig struct {
+	ClientControlServerPort int
+	ServerHttpServerPort    int
+	ClientTunnelServerPort  int
+	ServerAdminServerPort   int
+	ServerTlsConfig         *tls.Config
+}
 
-	go startHttpServer(httpServerPort)
+func Start(tunnelServerConfig TunnelServerConfig) {
+	useTLS := (tunnelServerConfig.ServerTlsConfig != nil)
 
-	go admin.StartAdminServer(adminServerPort)
+	//Start all the servers
+	go startHttpServer(tunnelServerConfig.ServerHttpServerPort)
+	go admin.StartAdminServer(tunnelServerConfig.ServerAdminServerPort)
+	if useTLS {
+		go startTLSClientTunnelServer(tunnelServerConfig)
+	} else {
+		go startClientTunnelServer(tunnelServerConfig.ClientTunnelServerPort)
+	}
 
-	go startClientTunnelServer(tunnelServerPort)
+	var listener net.Listener
+	var err error
+	addr := ":" + strconv.Itoa(tunnelServerConfig.ClientControlServerPort)
+	if useTLS {
+		listener, err = tls.Listen("tcp", addr, tunnelServerConfig.ServerTlsConfig)
+	} else {
+		listener, err = net.Listen("tcp", addr)
+	}
 
-	listener, err := net.Listen("tcp", addr)
 	if err != nil {
 		fmt.Printf("Could not create server with address=%s error=%s\n", addr, err.Error())
 		panic(err)
 	}
-
+	defer listener.Close()
 	for {
 		conn, err := listener.Accept()
 		if err != nil {
@@ -41,9 +61,23 @@ func Start(controlServerPort int, httpServerPort int, tunnelServerPort int, admi
 
 }
 
+func startTLSClientTunnelServer(config TunnelServerConfig) {
+	ln, err := tls.Listen("tcp", ":"+strconv.Itoa(config.ClientTunnelServerPort), config.ServerTlsConfig)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	defer ln.Close()
+	workWithListener(ln)
+}
+
 func startClientTunnelServer(port int) {
 	fmt.Println("Starting Client Tunnel Server on port", port)
 	httpListener, _ := net.Listen("tcp", ":"+strconv.Itoa(port))
+	workWithListener(httpListener)
+}
+
+func workWithListener(httpListener net.Listener) {
 	for {
 		conn, err := httpListener.Accept()
 		if err != nil {
