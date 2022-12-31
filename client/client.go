@@ -27,7 +27,7 @@ func createNewTunnel(message *proto.Message) net.Conn {
 	conf := &tls.Config{
 		//InsecureSkipVerify: true,
 	}
-	conn, _ := tls.Dial("tcp", "test.jtunnel.net:2121", conf)
+	conn, _ := tls.Dial("tcp", "manoj.lc-algorithms.com:2121", conf)
 	mutex := sync.Mutex{}
 	mutex.Lock()
 	tunnels[message.TunnelId] = conn
@@ -46,7 +46,7 @@ func startControlConnection() {
 	conf := &tls.Config{
 		//InsecureSkipVerify: true,
 	}
-	conn, err := tls.Dial("tcp", "test.jtunnel.net:9999", conf)
+	conn, err := tls.Dial("tcp", "manoj.lc-algorithms.com:9999", conf)
 	if err != nil {
 		fmt.Println("Failed to establish control connection ", err.Error())
 		return
@@ -58,8 +58,6 @@ func startControlConnection() {
 	mutex.Unlock()
 
 	for {
-		fmt.Println(conn.RemoteAddr())
-		conn.Write([]byte("asdf"))
 		message, err := proto.ReceiveMessage(conn)
 		fmt.Println("Received Message", message)
 		if err != nil {
