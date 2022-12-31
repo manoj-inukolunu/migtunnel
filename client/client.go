@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/tls"
 	"fmt"
 	"golang/client/admin"
 	"golang/proto"
@@ -23,7 +24,10 @@ func main() {
 }
 
 func createNewTunnel(message *proto.Message) net.Conn {
-	conn, _ := net.Dial("tcp", "manoj.jtunnel.net:2121")
+	conf := &tls.Config{
+		//InsecureSkipVerify: true,
+	}
+	conn, _ := tls.Dial("tcp", "test.jtunnel.net:2121", conf)
 	mutex := sync.Mutex{}
 	mutex.Lock()
 	tunnels[message.TunnelId] = conn
@@ -39,7 +43,14 @@ func createLocalConnection() net.Conn {
 
 func startControlConnection() {
 	fmt.Println("Starting Control connection")
-	conn, _ := net.Dial("tcp", "manoj.jtunnel.net:9999")
+	conf := &tls.Config{
+		//InsecureSkipVerify: true,
+	}
+	conn, err := tls.Dial("tcp", "test.jtunnel.net:9999", conf)
+	if err != nil {
+		fmt.Println("Failed to establish control connection ", err.Error())
+		return
+	}
 	mutex := sync.Mutex{}
 	mutex.Lock()
 	ControlConnections["data"] = conn
@@ -47,10 +58,15 @@ func startControlConnection() {
 	mutex.Unlock()
 
 	for {
+		fmt.Println(conn.RemoteAddr())
+		conn.Write([]byte("asdf"))
 		message, err := proto.ReceiveMessage(conn)
 		fmt.Println("Received Message", message)
 		if err != nil {
-			fmt.Println("Fail", err.Error())
+			if err.Error() == "EOF" {
+				panic("Server closed control connection stopping client now")
+			}
+			fmt.Println("Error on control connection ", err.Error())
 		}
 		if message.MessageType == "init-request" {
 			tunnel := createNewTunnel(message)

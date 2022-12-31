@@ -39,6 +39,7 @@ func Start(tunnelServerConfig TunnelServerConfig) {
 	var err error
 	addr := ":" + strconv.Itoa(tunnelServerConfig.ClientControlServerPort)
 	if useTLS {
+		fmt.Println("Using TLS to create client control server")
 		listener, err = tls.Listen("tcp", addr, tunnelServerConfig.ServerTlsConfig)
 	} else {
 		listener, err = net.Listen("tcp", addr)
