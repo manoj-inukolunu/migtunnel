@@ -14,6 +14,13 @@ builds:
       - windows
       - darwin
 
+brews:
+  - name: jtunnel
+    homepage: https://github.com/manoj-inukolunu/jtunnel-go
+    tap:
+      owner: manoj-inukolunu
+      name: jtunnel-go
+
 archives:
   - format: tar.gz
     # this name template makes the OS and Arch compatible with the results of uname.
