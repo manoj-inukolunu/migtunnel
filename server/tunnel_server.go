@@ -171,20 +171,22 @@ func handleControlConnection(conn net.Conn) {
 	for {
 		message, err := proto.ReceiveMessage(conn)
 
-		if message.MessageType == "register" {
-			log.Printf("Registering %s\n", message)
-			control_manager.SaveControlConnection(message.HostName, conn)
-		}
-
 		if err != nil && err == io.EOF {
 			log.Printf("Connection closed  %s", err)
 			return
 		}
+
 		if err != nil {
 			log.Println("Unknown error occurred", err)
 			conn.Close()
 			return
 		}
+
+		if message.MessageType == "register" {
+			log.Printf("Registering %s\n", message)
+			control_manager.SaveControlConnection(message.HostName, conn)
+		}
+
 		log.Println("Received Message ", message)
 		log.Println("Received Message = " + message.MessageType + " " + message.TunnelId + " " + string(message.Data))
 	}
