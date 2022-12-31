@@ -184,7 +184,7 @@ func handleControlConnection(conn net.Conn) {
 
 		if message.MessageType == "register" {
 			log.Printf("Registering %s\n", message)
-			control_manager.SaveControlConnection(message.HostName, conn)
+			control_manager.SaveControlConnection(message.HostName+".lc-algorithms.com", conn)
 		}
 
 		log.Println("Received Message ", message)
