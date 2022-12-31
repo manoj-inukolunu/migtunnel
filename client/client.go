@@ -1,93 +1,88 @@
 package main
 
 import (
+	"crypto/tls"
 	"fmt"
-	"github.com/akamensky/argparse"
-	"github.com/google/uuid"
-	"io/ioutil"
-	"jtunnel-go/proto"
+	"golang/client/admin"
+	"golang/proto"
+	"io"
 	"net"
-	"os"
 	"strconv"
+	"sync"
 )
 
-var registered = false
+var ControlConnections map[string]net.Conn
+var tunnels map[string]net.Conn
 
 func main() {
+	ControlConnections = make(map[string]net.Conn)
+	tunnels = make(map[string]net.Conn)
+	fmt.Println("Starting Admin Server on ", 1234)
+	go admin.StartServer(1234)
+	startControlConnection()
 
-	parser := argparse.NewParser("jtunnel", "Expose local server over the internet")
-	subdomain := parser.String("s", "subdomain", &argparse.Options{Required: true, Help: "Subdomain eg. test.jtunnel.net"})
-	localport := parser.Int("p", "localport", &argparse.Options{Required: true, Help: "Local server port to expose"})
+}
 
-	err := parser.Parse(os.Args)
+func createNewTunnel(message *proto.Message) net.Conn {
+	conf := &tls.Config{
+		//InsecureSkipVerify: true,
+	}
+	conn, _ := tls.Dial("tcp", "test.jtunnel.net:2121", conf)
+	mutex := sync.Mutex{}
+	mutex.Lock()
+	tunnels[message.TunnelId] = conn
+	mutex.Unlock()
+	proto.SendMessage(message, conn)
+	return conn
+}
+
+func createLocalConnection() net.Conn {
+	conn, _ := net.Dial("tcp", "localhost:3131")
+	return conn
+}
+
+func startControlConnection() {
+	fmt.Println("Starting Control connection")
+	conf := &tls.Config{
+		//InsecureSkipVerify: true,
+	}
+	conn, err := tls.Dial("tcp", "test.jtunnel.net:9999", conf)
 	if err != nil {
-		// In case of error print error and print usage
-		// This can also be done by passing -h or --help flags
-		fmt.Print(parser.Usage(err))
+		fmt.Println("Failed to establish control connection ", err.Error())
 		return
 	}
-	conn, err := createControlConnection(*subdomain)
-	if err != nil {
-		fmt.Println("Unable to connect to manoj.jtunnel.net:8585", err.Error())
-	}
-	handleData(conn, *localport, *subdomain)
+	mutex := sync.Mutex{}
+	mutex.Lock()
+	ControlConnections["data"] = conn
+	admin.SaveControlConnection(conn)
+	mutex.Unlock()
 
-}
-
-func makeRequest(data []byte, localPort int) ([]byte, error) {
-	fmt.Println(string(data))
-	server, _ := net.ResolveTCPAddr("tcp", "localhost:"+strconv.Itoa(localPort))
-	client, _ := net.ResolveTCPAddr("tcp", ":")
-	conn, err := net.DialTCP("tcp", client, server)
-	if err != nil {
-		fmt.Println("Error is ", err.Error())
-		return nil, err
-	} else {
-		fmt.Println("Making Local Request")
-		_, err := conn.Write(data)
-		if err != nil {
-			fmt.Println("Received Error", err.Error())
-			return nil, err
-		}
-		fmt.Println("Reading Local Response")
-		result, _ := ioutil.ReadAll(conn)
-		fmt.Println("Read Local Response")
-		//fmt.Println(string(result))
-		return result, nil
-	}
-}
-
-func createControlConnection(subdomain string) (*net.TCPConn, error) {
-	server, _ := net.ResolveTCPAddr("tcp", subdomain+".jtunnel.net:8585")
-	client, _ := net.ResolveTCPAddr("tcp", ":")
-	conn, err := net.DialTCP("tcp", client, server)
-	return conn, err
-}
-
-func handleData(conn *net.TCPConn, localPort int, subdomain string) {
 	for {
-		if !registered {
-			err := proto.SendMessage(proto.NewMessage(subdomain+".jtunnel.net", uuid.New().String(), "register", make([]byte, 0)), conn)
-			if err != nil {
-				fmt.Println("Unable to handleData ", err.Error())
-			}
-			registered = true
-		}
+		fmt.Println(conn.RemoteAddr())
+		conn.Write([]byte("asdf"))
 		message, err := proto.ReceiveMessage(conn)
+		fmt.Println("Received Message", message)
 		if err != nil {
-			fmt.Println("Unable to receive message", err.Error())
+			if err.Error() == "EOF" {
+				panic("Server closed control connection stopping client now")
+			}
+			fmt.Println("Error on control connection ", err.Error())
 		}
-		resp, err := makeRequest(message.Data, localPort)
-		if err != nil {
-			fmt.Println("Unable to make local request", err.Error())
-			return
+		if message.MessageType == "init-request" {
+			tunnel := createNewTunnel(message)
+			fmt.Println("Created a new Tunnel", message)
+			localConn := createLocalConnection()
+			fmt.Println("Created Local Connection", localConn.RemoteAddr())
+			go io.Copy(localConn, tunnel)
+			fmt.Println("Writing data to local Connection")
+			io.Copy(tunnel, localConn)
+			fmt.Println("Finished Writing data to tunnel")
+			tunnel.Close()
 		}
-		message = proto.NewMessage(subdomain+".jtunnel.net", message.MessageId, "response", resp)
-		err = proto.SendMessage(message, conn)
-		if err != nil {
-			fmt.Println("Unable to send response to tunnel server ", err.Error())
+		if message.MessageType == "ack-tunnel-create" {
+			fmt.Println("Received Ack for creating tunnel from the upstream server")
+			port, _ := strconv.Atoi(string(message.Data))
+			admin.UpdateHostNameToPortMap(message.HostName, port)
 		}
-
 	}
-
 }
