@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"crypto/tls"
-	"github.com/thejerf/suture/v4"
 	"golang/server"
 	"gopkg.in/yaml.v3"
 	"log"
@@ -24,15 +23,51 @@ func main() {
 			log.Println("Recover called from main error is , program exiting", r)
 		}
 	}()
-	log.Println("Starting Main with supervisor")
+	/*log.Println("Starting Main with supervisor")
 	supervisor := suture.NewSimple("Main")
 	service := &Main{}
 	ctx, cancel := context.WithCancel(context.Background())
 	supervisor.Add(service)
 	errors := supervisor.ServeBackground(ctx)
 	log.Println(<-errors)
-	cancel()
+	cancel()*/
+	run()
 
+}
+
+func run() {
+	yfile, err := os.ReadFile("server.yaml")
+	if err != nil {
+		log.Fatal(err)
+	}
+	data := make(map[string]string)
+	err2 := yaml.Unmarshal(yfile, &data)
+	if err2 != nil {
+		return
+	}
+
+	var config *tls.Config
+	if ok, _ := strconv.ParseBool(data["useTLS"]); ok {
+		log.Println("Using TLS")
+		cer, err := tls.LoadX509KeyPair(data["certFile"], data["keyFile"])
+		if err != nil {
+			log.Println(err)
+			return
+		}
+		config = &tls.Config{Certificates: []tls.Certificate{cer}}
+		log.Println("Created TLS config")
+	} else {
+		log.Println("Not using TLS")
+	}
+
+	tunnelServerConfig := server.TunnelServerConfig{
+		ClientTunnelServerPort:  9999,
+		ClientControlServerPort: 2121,
+		ServerHttpServerPort:    2020,
+		ServerAdminServerPort:   9090,
+		ServerTlsConfig:         config,
+	}
+	server.Start(tunnelServerConfig)
 }
 
 func (i *Main) Serve(ctx context.Context) error {

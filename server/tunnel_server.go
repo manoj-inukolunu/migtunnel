@@ -53,7 +53,6 @@ func Start(tunnelServerConfig TunnelServerConfig) {
 		conn, err := listener.Accept()
 		if err != nil {
 			log.Printf("Could not accept connection error=%s\n", err.Error())
-			panic(err)
 		}
 		log.Printf("Received Connection from %s \n", conn.RemoteAddr())
 		go handleControlConnection(conn)
