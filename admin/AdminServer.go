@@ -1,7 +1,6 @@
 package admin
 
 import (
-	"fmt"
 	control_manager "golang/control-manager"
 	tunnel_manager "golang/tunnel-manager"
 	"log"
@@ -18,19 +17,19 @@ func StartAdminServer(port int) {
 		log.Printf("Could not start admin server on port=%s  error=%s\n", port, err)
 		panic(err)
 	}
-	fmt.Println("Started Admin Server on ", 8090)
+	log.Println("Started Admin Server on ", 8090)
 }
 
 func listControlConnections(writer http.ResponseWriter, request *http.Request) {
 	_, err := writer.Write([]byte(control_manager.ListAllConnectionsAsString()))
 	if err != nil {
-		fmt.Println("Failed to list tunnels", err)
+		log.Println("Failed to list tunnels", err)
 	}
 }
 
 func listTunnels(writer http.ResponseWriter, request *http.Request) {
 	_, err := writer.Write([]byte(tunnel_manager.ListAllConnectionsAsString()))
 	if err != nil {
-		fmt.Println("Failed to list tunnels", err)
+		log.Println("Failed to list tunnels", err)
 	}
 }

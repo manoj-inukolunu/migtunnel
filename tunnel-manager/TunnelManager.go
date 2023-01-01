@@ -1,7 +1,6 @@
 package tunnel_manager
 
 import (
-	"fmt"
 	"log"
 	"net"
 	"strings"
@@ -11,14 +10,14 @@ import (
 var tunnelConnections = sync.Map{}
 
 func init() {
-	fmt.Println("Init for Tunnel Manager called")
+	log.Println("Init for Tunnel Manager called")
 }
 
 func RemoveTunnelConnection(tunnelId string) {
 	if conn, ok := GetTunnelConnection(tunnelId); ok {
 		err := conn.Close()
 		if err != nil {
-			fmt.Println("Tunnel connection is already closed for TunnelId=", tunnelId)
+			log.Println("Tunnel connection is already closed for TunnelId=", tunnelId)
 			tunnelConnections.Delete(tunnelId)
 			return
 		}

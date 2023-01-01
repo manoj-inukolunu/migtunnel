@@ -2,8 +2,8 @@ package admin
 
 import (
 	"errors"
-	"fmt"
 	"golang/proto"
+	"log"
 	"net"
 	"strconv"
 	"sync"
@@ -16,7 +16,7 @@ var controlConnections = sync.Map{}
 const controlConnectionKey = "Main"
 
 func SaveControlConnection(conn net.Conn) {
-	fmt.Println("Saving Control Connection")
+	log.Println("Saving Control Connection")
 	controlConnections.Store(controlConnectionKey, conn)
 }
 
@@ -30,7 +30,7 @@ func GetControlConnection() (net.Conn, bool) {
 	if data, ok := controlConnections.Load(controlConnectionKey); ok {
 		return data.(net.Conn), true
 	}
-	fmt.Println("Control Connection not found in the map")
+	log.Println("Control Connection not found in the map")
 	return nil, false
 }
 

@@ -2,11 +2,11 @@ package main
 
 import (
 	"crypto/tls"
-	"fmt"
 	markdown "github.com/MichaelMure/go-term-markdown"
 	"golang/client/admin"
 	"golang/proto"
 	"io"
+	"log"
 	"net"
 	"os"
 	"strconv"
@@ -25,11 +25,11 @@ func main() {
 
 	result := markdown.Render(string(source), 80, 6)
 
-	fmt.Println(string(result))
+	log.Println(string(result))
 
 	ControlConnections = make(map[string]net.Conn)
 	tunnels = make(map[string]net.Conn)
-	fmt.Println("Starting Admin Server on ", 1234)
+	log.Println("Starting Admin Server on ", 1234)
 	go admin.StartServer(1234)
 	startControlConnection()
 
@@ -54,13 +54,13 @@ func createLocalConnection() net.Conn {
 }
 
 func startControlConnection() {
-	fmt.Println("Starting Control connection")
+	log.Println("Starting Control connection")
 	conf := &tls.Config{
 		//InsecureSkipVerify: true,
 	}
 	conn, err := tls.Dial("tcp", "manoj.lc-algorithms.com:9999", conf)
 	if err != nil {
-		fmt.Println("Failed to establish control connection ", err.Error())
+		log.Println("Failed to establish control connection ", err.Error())
 		return
 	}
 	mutex := sync.Mutex{}
@@ -71,26 +71,26 @@ func startControlConnection() {
 
 	for {
 		message, err := proto.ReceiveMessage(conn)
-		fmt.Println("Received Message", message)
+		log.Println("Received Message", message)
 		if err != nil {
 			if err.Error() == "EOF" {
 				panic("Server closed control connection stopping client now")
 			}
-			fmt.Println("Error on control connection ", err.Error())
+			log.Println("Error on control connection ", err.Error())
 		}
 		if message.MessageType == "init-request" {
 			tunnel := createNewTunnel(message)
-			fmt.Println("Created a new Tunnel", message)
+			log.Println("Created a new Tunnel", message)
 			localConn := createLocalConnection()
-			fmt.Println("Created Local Connection", localConn.RemoteAddr())
+			log.Println("Created Local Connection", localConn.RemoteAddr())
 			go io.Copy(localConn, tunnel)
-			fmt.Println("Writing data to local Connection")
+			log.Println("Writing data to local Connection")
 			io.Copy(tunnel, localConn)
-			fmt.Println("Finished Writing data to tunnel")
+			log.Println("Finished Writing data to tunnel")
 			tunnel.Close()
 		}
 		if message.MessageType == "ack-tunnel-create" {
-			fmt.Println("Received Ack for creating tunnel from the upstream server")
+			log.Println("Received Ack for creating tunnel from the upstream server")
 			port, _ := strconv.Atoi(string(message.Data))
 			admin.UpdateHostNameToPortMap(message.HostName, port)
 		}

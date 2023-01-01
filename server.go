@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"crypto/tls"
-	"fmt"
 	"github.com/thejerf/suture/v4"
 	"golang/server"
 	"gopkg.in/yaml.v3"
@@ -16,16 +15,17 @@ type Main struct {
 }
 
 func (i *Main) Stop() {
-	fmt.Println("Stopping the service")
+	log.Println("Stopping the service")
 }
 
 func main() {
+	log.Println("Starting Main with supervisor")
 	supervisor := suture.NewSimple("Main")
 	service := &Main{}
 	ctx, cancel := context.WithCancel(context.Background())
 	supervisor.Add(service)
 	errors := supervisor.ServeBackground(ctx)
-	fmt.Println(<-errors)
+	log.Println(<-errors)
 	cancel()
 
 }
@@ -43,16 +43,16 @@ func (i *Main) Serve(ctx context.Context) error {
 
 	var config *tls.Config
 	if ok, _ := strconv.ParseBool(data["useTLS"]); ok {
-		fmt.Println("Using TLS")
+		log.Println("Using TLS")
 		cer, err := tls.LoadX509KeyPair(data["certFile"], data["keyFile"])
 		if err != nil {
 			log.Println(err)
 			return err
 		}
 		config = &tls.Config{Certificates: []tls.Certificate{cer}}
-		fmt.Println("Created TLS config")
+		log.Println("Created TLS config")
 	} else {
-		fmt.Println("Not using TLS")
+		log.Println("Not using TLS")
 	}
 
 	tunnelServerConfig := server.TunnelServerConfig{
