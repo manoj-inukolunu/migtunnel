@@ -8,7 +8,6 @@ import (
 	"io"
 	"log"
 	"net"
-	"os"
 	"strconv"
 	"sync"
 )
@@ -16,17 +15,11 @@ import (
 var ControlConnections map[string]net.Conn
 var tunnels map[string]net.Conn
 
+const usage = "Welcome to JTunnel .\n\nSource code is at `https://github.com/manoj-inukolunu/jtunnel-go`\n\nTo create a new tunnel\n\nMake a `POST` request to `http://127.0.0.1:1234/create`\nwith the payload\n\n```\n{\n    \"HostName\":\"myhost\",\n    \"TunnelName\":\"Tunnel Name\",\n    \"localServerPort\":\"3131\"\n}\n\n```\n\nThe endpoint you get is `https://myhost.lc-algorithms.com`\n\nAll the requests to `https://myhost.lc-algorithms.com` will now\n\nbe routed to your server running on port `3131`\n\n"
+
 func main() {
-	path := "usage.md"
-	source, err := os.ReadFile(path)
-	if err != nil {
-		panic(err)
-	}
-
-	result := markdown.Render(string(source), 80, 6)
-
+	result := markdown.Render(usage, 80, 6)
 	log.Println(string(result))
-
 	ControlConnections = make(map[string]net.Conn)
 	tunnels = make(map[string]net.Conn)
 	log.Println("Starting Admin Server on ", 1234)
