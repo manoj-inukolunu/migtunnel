@@ -19,6 +19,11 @@ func (i *Main) Stop() {
 }
 
 func main() {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Println("Recover called from main error is , program exiting", r)
+		}
+	}()
 	log.Println("Starting Main with supervisor")
 	supervisor := suture.NewSimple("Main")
 	service := &Main{}
