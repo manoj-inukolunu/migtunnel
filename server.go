@@ -3,10 +3,13 @@ package main
 import (
 	"context"
 	"crypto/tls"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"golang/server"
 	"gopkg.in/yaml.v3"
 	"log"
+	"net/http"
 	"os"
+	"os/signal"
 	"strconv"
 )
 
@@ -23,6 +26,22 @@ func main() {
 			log.Println("Recover called from main error is , program exiting", r)
 		}
 	}()
+
+	sigc := make(chan os.Signal, 1)
+
+	signal.Notify(sigc)
+
+	go func() {
+		s := <-sigc
+		log.Println(s.String())
+	}()
+
+	go func() {
+		log.Println("Metrics endpoing at /metrics")
+		http.Handle("/metrics", promhttp.Handler())
+		http.ListenAndServe(":2112", nil)
+	}()
+
 	/*log.Println("Starting Main with supervisor")
 	supervisor := suture.NewSimple("Main")
 	service := &Main{}
