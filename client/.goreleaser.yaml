@@ -16,10 +16,10 @@ builds:
 
 brews:
   - name: jtunnel
-    homepage: https://github.com/manoj-inukolunu/homebrew-formulae
+    homepage: https://github.com/manoj-inukolunu/homebrew-tools
     tap:
       owner: manoj-inukolunu
-      name: homebrew-formulae
+      name: homebrew-tools
 
 archives:
   - format: tar.gz
