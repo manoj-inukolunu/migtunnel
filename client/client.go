@@ -17,7 +17,7 @@ var ControlConnections map[string]net.Conn
 var tunnels map[string]net.Conn
 
 func main() {
-	path := "client/usage.md"
+	path := "usage.md"
 	source, err := os.ReadFile(path)
 	if err != nil {
 		panic(err)

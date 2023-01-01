@@ -80,8 +80,8 @@ func run() {
 	}
 
 	tunnelServerConfig := server.TunnelServerConfig{
-		ClientTunnelServerPort:  9999,
-		ClientControlServerPort: 2121,
+		ClientTunnelServerPort:  2121,
+		ClientControlServerPort: 9999,
 		ServerHttpServerPort:    2020,
 		ServerAdminServerPort:   9090,
 		ServerTlsConfig:         config,
