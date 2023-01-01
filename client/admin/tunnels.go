@@ -10,7 +10,7 @@ var tunnelConnections = sync.Map{}
 var hostNameToPortMap = sync.Map{}
 
 func init() {
-	fmt.Println("Init of tunnels called")
+	//fmt.Println("Init of tunnels called")
 }
 
 func UpdateHostNameToPortMap(hostName string, localServerPort int) {

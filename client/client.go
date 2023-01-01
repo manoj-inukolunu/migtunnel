@@ -3,10 +3,12 @@ package main
 import (
 	"crypto/tls"
 	"fmt"
+	markdown "github.com/MichaelMure/go-term-markdown"
 	"golang/client/admin"
 	"golang/proto"
 	"io"
 	"net"
+	"os"
 	"strconv"
 	"sync"
 )
@@ -15,6 +17,16 @@ var ControlConnections map[string]net.Conn
 var tunnels map[string]net.Conn
 
 func main() {
+	path := "client/usage.md"
+	source, err := os.ReadFile(path)
+	if err != nil {
+		panic(err)
+	}
+
+	result := markdown.Render(string(source), 80, 6)
+
+	fmt.Println(string(result))
+
 	ControlConnections = make(map[string]net.Conn)
 	tunnels = make(map[string]net.Conn)
 	fmt.Println("Starting Admin Server on ", 1234)
@@ -27,7 +39,7 @@ func createNewTunnel(message *proto.Message) net.Conn {
 	conf := &tls.Config{
 		//InsecureSkipVerify: true,
 	}
-	conn, _ := tls.Dial("tcp", "test.jtunnel.net:2121", conf)
+	conn, _ := tls.Dial("tcp", "manoj.lc-algorithms.com:2121", conf)
 	mutex := sync.Mutex{}
 	mutex.Lock()
 	tunnels[message.TunnelId] = conn
@@ -46,7 +58,7 @@ func startControlConnection() {
 	conf := &tls.Config{
 		//InsecureSkipVerify: true,
 	}
-	conn, err := tls.Dial("tcp", "test.jtunnel.net:9999", conf)
+	conn, err := tls.Dial("tcp", "manoj.lc-algorithms.com:9999", conf)
 	if err != nil {
 		fmt.Println("Failed to establish control connection ", err.Error())
 		return
@@ -58,8 +70,6 @@ func startControlConnection() {
 	mutex.Unlock()
 
 	for {
-		fmt.Println(conn.RemoteAddr())
-		conn.Write([]byte("asdf"))
 		message, err := proto.ReceiveMessage(conn)
 		fmt.Println("Received Message", message)
 		if err != nil {

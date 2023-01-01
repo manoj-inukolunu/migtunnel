@@ -1,8 +1,10 @@
 package main
 
 import (
+	"context"
 	"crypto/tls"
 	"fmt"
+	"github.com/thejerf/suture/v4"
 	"golang/server"
 	"gopkg.in/yaml.v3"
 	"log"
@@ -10,7 +12,25 @@ import (
 	"strconv"
 )
 
+type Main struct {
+}
+
+func (i *Main) Stop() {
+	fmt.Println("Stopping the service")
+}
+
 func main() {
+	supervisor := suture.NewSimple("Main")
+	service := &Main{}
+	ctx, cancel := context.WithCancel(context.Background())
+	supervisor.Add(service)
+	errors := supervisor.ServeBackground(ctx)
+	fmt.Println(<-errors)
+	cancel()
+
+}
+
+func (i *Main) Serve(ctx context.Context) error {
 	yfile, err := os.ReadFile("server.yaml")
 	if err != nil {
 		log.Fatal(err)
@@ -18,7 +38,7 @@ func main() {
 	data := make(map[string]string)
 	err2 := yaml.Unmarshal(yfile, &data)
 	if err2 != nil {
-		log.Fatal(err2)
+		return err2
 	}
 
 	var config *tls.Config
@@ -27,7 +47,7 @@ func main() {
 		cer, err := tls.LoadX509KeyPair(data["certFile"], data["keyFile"])
 		if err != nil {
 			log.Println(err)
-			return
+			return err
 		}
 		config = &tls.Config{Certificates: []tls.Certificate{cer}}
 		fmt.Println("Created TLS config")
@@ -43,4 +63,6 @@ func main() {
 		ServerTlsConfig:         config,
 	}
 	server.Start(tunnelServerConfig)
+
+	return nil
 }
