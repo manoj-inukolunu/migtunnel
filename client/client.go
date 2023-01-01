@@ -3,10 +3,12 @@ package main
 import (
 	"crypto/tls"
 	"fmt"
+	markdown "github.com/MichaelMure/go-term-markdown"
 	"golang/client/admin"
 	"golang/proto"
 	"io"
 	"net"
+	"os"
 	"strconv"
 	"sync"
 )
@@ -15,6 +17,16 @@ var ControlConnections map[string]net.Conn
 var tunnels map[string]net.Conn
 
 func main() {
+	path := "client/usage.md"
+	source, err := os.ReadFile(path)
+	if err != nil {
+		panic(err)
+	}
+
+	result := markdown.Render(string(source), 80, 6)
+
+	fmt.Println(string(result))
+
 	ControlConnections = make(map[string]net.Conn)
 	tunnels = make(map[string]net.Conn)
 	fmt.Println("Starting Admin Server on ", 1234)
