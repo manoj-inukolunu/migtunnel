@@ -2,7 +2,6 @@ package server
 
 import (
 	"crypto/tls"
-	"fmt"
 	"github.com/google/uuid"
 	"github.com/inconshreveable/go-vhost"
 	"golang/admin"
@@ -39,24 +38,24 @@ func Start(tunnelServerConfig TunnelServerConfig) {
 	var err error
 	addr := ":" + strconv.Itoa(tunnelServerConfig.ClientControlServerPort)
 	if useTLS {
-		fmt.Println("Using TLS to create client control server")
+		log.Println("Using TLS to create client control server")
 		listener, err = tls.Listen("tcp", addr, tunnelServerConfig.ServerTlsConfig)
 	} else {
 		listener, err = net.Listen("tcp", addr)
 	}
 
 	if err != nil {
-		fmt.Printf("Could not create server with address=%s error=%s\n", addr, err.Error())
+		log.Printf("Could not create server with address=%s error=%s\n", addr, err.Error())
 		panic(err)
 	}
 	defer listener.Close()
 	for {
 		conn, err := listener.Accept()
 		if err != nil {
-			fmt.Printf("Could not accept connection error=%s\n", err.Error())
+			log.Printf("Could not accept connection error=%s\n", err.Error())
 			panic(err)
 		}
-		fmt.Printf("Received Connection from %s \n", conn.RemoteAddr())
+		log.Printf("Received Connection from %s \n", conn.RemoteAddr())
 		go handleControlConnection(conn)
 	}
 
@@ -73,7 +72,7 @@ func startTLSClientTunnelServer(config TunnelServerConfig) {
 }
 
 func startClientTunnelServer(port int) {
-	fmt.Println("Starting Client Tunnel Server on port", port)
+	log.Println("Starting Client Tunnel Server on port", port)
 	httpListener, _ := net.Listen("tcp", ":"+strconv.Itoa(port))
 	workWithListener(httpListener)
 }
@@ -92,7 +91,7 @@ func workWithListener(httpListener net.Listener) {
 func handleClientTunnelServerConnection(conn net.Conn) {
 	message, err := proto.ReceiveMessage(conn)
 	if err != nil {
-		fmt.Println("Failed to receive message from tunnel connection", conn)
+		log.Println("Failed to receive message from tunnel connection", conn)
 		err := conn.Close()
 		if err != nil {
 			return
@@ -119,11 +118,11 @@ func handleClientTunnelServerConnection(conn net.Conn) {
 
 func startHttpServer(port int) {
 	httpListener, _ := net.Listen("tcp", "localhost:"+strconv.Itoa(port))
-	fmt.Println("Starting http server")
+	log.Println("Starting http server")
 	for {
 		conn, err := httpListener.Accept()
 		if err != nil {
-			fmt.Println("Error ", err)
+			log.Println("Error ", err)
 		}
 		go handleIncomingHttpRequest(conn)
 	}
@@ -134,7 +133,7 @@ func handleIncomingHttpRequest(conn net.Conn) {
 	id := uuid.New().String()
 	vhostConn, err := vhost.HTTP(conn)
 	if err != nil {
-		fmt.Println("Not a valid http connection", err)
+		log.Println("Not a valid http connection", err)
 	}
 	controlConnection, ok := control_manager.GetControlConnection(vhostConn.Host())
 	if !ok {
@@ -143,23 +142,23 @@ func handleIncomingHttpRequest(conn net.Conn) {
 	}
 	err = proto.SendMessage(proto.NewMessage("localhost", id, "init-request", []byte(id)), controlConnection)
 	if err != nil {
-		fmt.Println("Could not send message to client connection for host", vhostConn.Host())
+		log.Println("Could not send message to client connection for host", vhostConn.Host())
 		return
 	}
 	//wait until tunnelConnections has id
 	for {
 		if clientConn, ok := tunnel_manager.GetTunnelConnection(id); ok {
-			fmt.Println("Found Connection for tunnelId=", id)
+			log.Println("Found Connection for tunnelId=", id)
 			// new connection created between client and server
 			// copy data between source connection and client connection in a new go routine
 			go io.Copy(clientConn, vhostConn)
 			// copy data between client connection and source connections
 			_, err := io.Copy(vhostConn, clientConn)
 			if err != nil {
-				fmt.Println("Failed")
+				log.Println("Failed")
 				return
 			}
-			fmt.Println("Copy Done")
+			log.Println("Copy Done")
 			tunnel_manager.RemoveTunnelConnection(id)
 			break
 		}

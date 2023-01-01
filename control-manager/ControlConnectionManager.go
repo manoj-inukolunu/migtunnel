@@ -1,7 +1,6 @@
 package control_manager
 
 import (
-	"fmt"
 	"golang/proto"
 	"log"
 	"net"
@@ -14,19 +13,19 @@ import (
 var controlConnections = sync.Map{}
 
 func init() {
-	fmt.Println("Init for ControlConnectionManager called")
+	log.Println("Init for ControlConnectionManager called")
 	ticker := time.NewTicker(15 * time.Second)
 	quit := make(chan struct{})
 	go func() {
 		for {
 			select {
 			case <-ticker.C:
-				fmt.Println("Checking for closed control connections")
+				log.Println("Checking for closed control connections")
 				controlConnections.Range(func(hostName, connection any) bool {
 					conn := connection.(net.Conn)
 					err := proto.SendMessage(proto.PingMessage(), conn)
 					if err != nil {
-						fmt.Printf("Could not send ping to hostName=%s ,error=%s, will be closing connection\n", hostName, err)
+						log.Printf("Could not send ping to hostName=%s ,error=%s, will be closing connection\n", hostName, err)
 						controlConnections.Delete(hostName)
 					}
 					return true
@@ -42,7 +41,7 @@ func init() {
 }
 
 func initCronitorHeartbeat() {
-	fmt.Println("Starting Cronitor Heartbeat , ticker at 60 seconds")
+	log.Println("Starting Cronitor Heartbeat , ticker at 60 seconds")
 	ticker := time.NewTicker(60 * time.Second)
 	quit := make(chan struct{})
 	go func() {
@@ -51,7 +50,7 @@ func initCronitorHeartbeat() {
 			case <-ticker.C:
 				_, err := http.Get("https://cronitor.link/p/70f15f445cc1490ba2183404be52079c/UQZCNL")
 				if err != nil {
-					fmt.Println("Failed to send heartbeat", err.Error())
+					log.Println("Failed to send heartbeat", err.Error())
 				}
 			case <-quit:
 				ticker.Stop()
