@@ -89,7 +89,7 @@ func startControlConnection() {
 			if err.Error() == "EOF" {
 				panic("Server closed control connection stopping client now")
 			}
-			panic("Error on control connection " + err.Error())
+			log.Println("Error on control connection " + err.Error())
 		}
 		if message.MessageType == "init-request" {
 			tunnel := createNewTunnel(message)
