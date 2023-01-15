@@ -1,13 +1,16 @@
 package main
 
 import (
+	"context"
 	"crypto/tls"
 	markdown "github.com/MichaelMure/go-term-markdown"
+	"github.com/thejerf/suture/v4"
 	"golang/client/admin"
 	"golang/proto"
 	"io"
 	"log"
 	"net"
+	"os"
 	"strconv"
 	"sync"
 )
@@ -15,9 +18,12 @@ import (
 var ControlConnections map[string]net.Conn
 var tunnels map[string]net.Conn
 
-const usage = "Welcome to JTunnel .\n\nSource code is at `https://github.com/manoj-inukolunu/jtunnel-go`\n\nTo create a new tunnel\n\nMake a `POST` request to `http://127.0.0.1:1234/create`\nwith the payload\n\n```\n{\n    \"HostName\":\"myhost\",\n    \"TunnelName\":\"Tunnel Name\",\n    \"localServerPort\":\"3131\"\n}\n\n```\n\nThe endpoint you get is `https://myhost.lc-algorithms.com`\n\nAll the requests to `https://myhost.lc-algorithms.com` will now\n\nbe routed to your server running on port `3131`\n\n"
+const usage = "Welcome to JTunnel .\n\nSource code is at `https://github.com/manoj-inukolunu/jtunnel-go`\n\nTo create a new tunnel\n\nMake a `POST` request to `http://127.0.0.1:1234/create`\nwith the payload\n\n```\n{\n    \"HostName\":\"myhost\",\n    \"TunnelName\":\"Tunnel Name\",\n    \"localServerPort\":\"3131\"\n}\n\n```\n\nThe endpoint you get is `https://myhost.jtunnel.net`\n\nAll the requests to `https://myhost.jtunnel.net` will now\n\nbe routed to your server running on port `3131`\n\n"
 
-func main() {
+type Main struct {
+}
+
+func (i *Main) Serve(ctx context.Context) error {
 	result := markdown.Render(usage, 80, 6)
 	log.Println(string(result))
 	ControlConnections = make(map[string]net.Conn)
@@ -25,14 +31,28 @@ func main() {
 	log.Println("Starting Admin Server on ", 1234)
 	go admin.StartServer(1234)
 	startControlConnection()
+	return nil
+}
 
+func (i *Main) Stop() {
+	log.Println("Stopping Client")
+}
+
+func main() {
+	supervisor := suture.NewSimple("Client")
+	service := &Main{}
+	ctx, cancel := context.WithCancel(context.Background())
+	supervisor.Add(service)
+	errors := supervisor.ServeBackground(ctx)
+	log.Println(<-errors)
+	cancel()
 }
 
 func createNewTunnel(message *proto.Message) net.Conn {
 	conf := &tls.Config{
 		//InsecureSkipVerify: true,
 	}
-	conn, _ := tls.Dial("tcp", "manoj.lc-algorithms.com:2121", conf)
+	conn, _ := tls.Dial("tcp", "manoj.jtunnel.net:2121", conf)
 	mutex := sync.Mutex{}
 	mutex.Lock()
 	tunnels[message.TunnelId] = conn
@@ -51,7 +71,7 @@ func startControlConnection() {
 	conf := &tls.Config{
 		//InsecureSkipVerify: true,
 	}
-	conn, err := tls.Dial("tcp", "manoj.lc-algorithms.com:9999", conf)
+	conn, err := tls.Dial("tcp", "manoj.jtunnel.net:9999", conf)
 	if err != nil {
 		log.Println("Failed to establish control connection ", err.Error())
 		return
@@ -69,14 +89,23 @@ func startControlConnection() {
 			if err.Error() == "EOF" {
 				panic("Server closed control connection stopping client now")
 			}
-			log.Println("Error on control connection ", err.Error())
+			panic("Error on control connection " + err.Error())
 		}
 		if message.MessageType == "init-request" {
 			tunnel := createNewTunnel(message)
 			log.Println("Created a new Tunnel", message)
 			localConn := createLocalConnection()
-			log.Println("Created Local Connection", localConn.RemoteAddr())
-			go io.Copy(localConn, tunnel)
+			go func() {
+				_, pw := io.Pipe()
+				log.Println("Created Local Connection", localConn.RemoteAddr())
+				writer := io.MultiWriter(localConn, pw)
+				go func() {
+					reader := io.TeeReader(tunnel, writer)
+					io.Copy(os.Stdout, reader)
+				}()
+			}()
+
+			//go io.Copy(localConn, tunnel)
 			log.Println("Writing data to local Connection")
 			io.Copy(tunnel, localConn)
 			log.Println("Finished Writing data to tunnel")
