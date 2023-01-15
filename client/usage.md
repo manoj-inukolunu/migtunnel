@@ -16,9 +16,9 @@ with the payload
 
 ```
 
-The endpoint you get is `https://myhost.jtunnel.net`
+The endpoint you get is `https://myhost.migtunnel.net`
 
-All the requests to `https://myhost.jtunnel.net` will now
+All the requests to `https://myhost.migtunnel.net` will now
 
 be routed to your server running on port `3131`
 

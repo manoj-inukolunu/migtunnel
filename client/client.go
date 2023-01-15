@@ -18,7 +18,7 @@ import (
 var ControlConnections map[string]net.Conn
 var tunnels map[string]net.Conn
 
-const usage = "Welcome to JTunnel .\n\nSource code is at `https://github.com/manoj-inukolunu/jtunnel-go`\n\nTo create a new tunnel\n\nMake a `POST` request to `http://127.0.0.1:1234/create`\nwith the payload\n\n```\n{\n    \"HostName\":\"myhost\",\n    \"TunnelName\":\"Tunnel Name\",\n    \"localServerPort\":\"3131\"\n}\n\n```\n\nThe endpoint you get is `https://myhost.jtunnel.net`\n\nAll the requests to `https://myhost.jtunnel.net` will now\n\nbe routed to your server running on port `3131`\n\n"
+const usage = "Welcome to JTunnel .\n\nSource code is at `https://github.com/manoj-inukolunu/jtunnel-go`\n\nTo create a new tunnel\n\nMake a `POST` request to `http://127.0.0.1:1234/create`\nwith the payload\n\n```\n{\n    \"HostName\":\"myhost\",\n    \"TunnelName\":\"Tunnel Name\",\n    \"localServerPort\":\"3131\"\n}\n\n```\n\nThe endpoint you get is `https://myhost.migtunnel.net`\n\nAll the requests to `https://myhost.migtunnel.net` will now\n\nbe routed to your server running on port `3131`\n\n"
 
 type Main struct {
 }
@@ -52,7 +52,7 @@ func createNewTunnel(message *proto.Message) net.Conn {
 	conf := &tls.Config{
 		//InsecureSkipVerify: true,
 	}
-	conn, _ := tls.Dial("tcp", "manoj.jtunnel.net:2121", conf)
+	conn, _ := tls.Dial("tcp", "manoj.migtunnel.net:2121", conf)
 	mutex := sync.Mutex{}
 	mutex.Lock()
 	tunnels[message.TunnelId] = conn
@@ -71,10 +71,10 @@ func startControlConnection() {
 	conf := &tls.Config{
 		//InsecureSkipVerify: true,
 	}
-	conn, err := tls.Dial("tcp", "manoj.jtunnel.net:9999", conf)
+	conn, err := tls.Dial("tcp", "manoj.migtunnel.net:9999", conf)
 	if err != nil {
 		log.Println("Failed to establish control connection ", err.Error())
-		return
+		panic(err)
 	}
 	mutex := sync.Mutex{}
 	mutex.Lock()

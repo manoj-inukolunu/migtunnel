@@ -182,7 +182,7 @@ func handleControlConnection(conn net.Conn) {
 
 		if message.MessageType == "register" {
 			log.Printf("Registering %s\n", message)
-			control_manager.SaveControlConnection(message.HostName+".jtunnel.net", conn)
+			control_manager.SaveControlConnection(message.HostName+".migtunnel.net", conn)
 		}
 
 		log.Println("Received Message ", message)
