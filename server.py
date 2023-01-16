@@ -8,9 +8,6 @@ from flask import request
 app = Flask(__name__)
 
 
-
-
-
 @app.route('/manoj/*', methods=('GET', 'POST'))
 @app.route('/test', methods=('GET', 'POST'))
 def get():
@@ -21,7 +18,15 @@ def get():
     #     print(data)
     #   return data
     if request.method == 'POST':
-        return hello_world(request)
+        try:
+            print(request.get_data())
+            return hello_world(request)
+        except:
+            print("Fail")
+            return ""
+
+    print(request.headers.keys())
+    print(request.headers)
     resp = Response("")
     resp.headers['x-amz-apigw-id'] = "asdf"
     return resp

@@ -10,7 +10,6 @@ import (
 	"io"
 	"log"
 	"net"
-	"os"
 	"strconv"
 	"sync"
 )
@@ -95,19 +94,11 @@ func startControlConnection() {
 			tunnel := createNewTunnel(message)
 			log.Println("Created a new Tunnel", message)
 			localConn := createLocalConnection()
-			go func() {
-				_, pw := io.Pipe()
-				log.Println("Created Local Connection", localConn.RemoteAddr())
-				writer := io.MultiWriter(localConn, pw)
-				go func() {
-					reader := io.TeeReader(tunnel, writer)
-					io.Copy(os.Stdout, reader)
-				}()
-			}()
-
-			//go io.Copy(localConn, tunnel)
+			log.Println("Created Local Connection", localConn.RemoteAddr())
+			go io.Copy(localConn, tunnel)
 			log.Println("Writing data to local Connection")
 			io.Copy(tunnel, localConn)
+
 			log.Println("Finished Writing data to tunnel")
 			tunnel.Close()
 		}
