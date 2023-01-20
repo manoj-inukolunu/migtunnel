@@ -88,6 +88,7 @@ func workWithListener(httpListener net.Listener) {
 }
 
 func handleClientTunnelServerConnection(conn net.Conn) {
+	defer conn.Close()
 	message, err := proto.ReceiveMessage(conn)
 	if err != nil {
 		log.Println("Failed to receive message from tunnel connection", conn)
@@ -118,6 +119,7 @@ func handleClientTunnelServerConnection(conn net.Conn) {
 func startHttpServer(port int) {
 	httpListener, _ := net.Listen("tcp", "localhost:"+strconv.Itoa(port))
 	log.Println("Starting http server")
+	defer httpListener.Close()
 	for {
 		conn, err := httpListener.Accept()
 		if err != nil {
@@ -129,6 +131,7 @@ func startHttpServer(port int) {
 }
 
 func handleIncomingHttpRequest(conn net.Conn) {
+	defer conn.Close()
 	id := uuid.New().String()
 	vhostConn, err := vhost.HTTP(conn)
 	if err != nil {
@@ -166,6 +169,7 @@ func handleIncomingHttpRequest(conn net.Conn) {
 }
 
 func handleControlConnection(conn net.Conn) {
+	defer conn.Close()
 	for {
 		message, err := proto.ReceiveMessage(conn)
 
@@ -176,7 +180,6 @@ func handleControlConnection(conn net.Conn) {
 
 		if err != nil {
 			log.Println("Unknown error occurred", err)
-			conn.Close()
 			return
 		}
 
