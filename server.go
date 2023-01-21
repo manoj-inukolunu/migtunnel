@@ -8,8 +8,8 @@ import (
 	"gopkg.in/yaml.v3"
 	"log"
 	"net/http"
+	_ "net/http/pprof"
 	"os"
-	"os/signal"
 	"strconv"
 )
 
@@ -27,19 +27,23 @@ func main() {
 		}
 	}()
 
-	sigc := make(chan os.Signal, 1)
+	/*sigc := make(chan os.Signal, 1)
 
 	signal.Notify(sigc)
 
 	go func() {
 		s := <-sigc
 		log.Println(s.String())
-	}()
+	}()*/
 
 	go func() {
 		log.Println("Metrics endpoing at /metrics")
 		http.Handle("/metrics", promhttp.Handler())
 		http.ListenAndServe(":2112", nil)
+	}()
+
+	go func() {
+		log.Println(http.ListenAndServe("localhost:6060", nil))
 	}()
 
 	/*log.Println("Starting Main with supervisor")
