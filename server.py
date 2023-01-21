@@ -19,17 +19,10 @@ def get():
     #   return data
     if request.method == 'POST':
         try:
-            # print(request.get_data())
-            str = request.get_data()
-            if len(str) > 1000:
-                print("Received request")
-                print(json.dumps(request.get_json(), indent=2))
-            else:
-                print(str)
-
+            print(request.get_data())
             return hello_world(request)
         except:
-            print("Exception")
+            print("Fail")
             return ""
 
     print(request.headers.keys())
