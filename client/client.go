@@ -95,9 +95,17 @@ func startControlConnection() {
 			log.Println("Created a new Tunnel", message)
 			localConn := createLocalConnection()
 			log.Println("Created Local Connection", localConn.RemoteAddr())
-			go io.Copy(localConn, tunnel)
+			go func() {
+				_, err := io.Copy(localConn, tunnel)
+				if err != nil {
+					log.Println("Error writing data to local connection ", err.Error())
+				}
+			}()
 			log.Println("Writing data to local Connection")
-			io.Copy(tunnel, localConn)
+			_, err := io.Copy(tunnel, localConn)
+			if err != nil {
+				log.Println("Error writing data to local connection ", err.Error())
+			}
 
 			log.Println("Finished Writing data to tunnel")
 			tunnel.Close()
