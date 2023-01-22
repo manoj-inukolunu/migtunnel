@@ -103,21 +103,30 @@ func startControlConnection() {
 				_, err := io.Copy(localConn, tunnel)
 				if err != nil {
 					sugar.Errorw("Error writing data from tunnel to localTunnel", err.Error())
+					closeConnections(localConn)
 				}
 			}()
 			sugar.Infow("Writing data to local Connection")
 			_, err := io.Copy(tunnel, localConn)
 			if err != nil {
 				sugar.Errorw("Error writing data From local connection to tunnel ", err.Error())
+				closeConnections(localConn)
 			}
 
 			sugar.Infow("Finished Writing data to tunnel")
-			//tunnel.Close()
+			closeConnections(localConn)
 		}
 		if message.MessageType == "ack-tunnel-create" {
 			sugar.Infow("Received Ack for creating tunnel from the upstream server")
 			port, _ := strconv.Atoi(string(message.Data))
 			admin.UpdateHostNameToPortMap(message.HostName, port)
 		}
+	}
+}
+
+func closeConnections(localConn net.Conn) {
+	localConnError := localConn.Close()
+	if localConnError != nil {
+		sugar.Errorw("Error Closing Local Connection ", localConnError.Error())
 	}
 }

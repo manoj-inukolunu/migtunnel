@@ -23,7 +23,7 @@ def get():
             return hello_world(request)
         except Exception as e:
             print("Fail ", e)
-            return ""
+            return str(e)
 
     print(request.headers.keys())
     print(request.headers)
@@ -48,6 +48,8 @@ def test(request):
     count = 0
     if isinstance(request_json, str):
         data = json.loads(request_json)
+    else:
+        data = request_json
 
     for feature in data['instances']:
         preds["predictions"].append({
