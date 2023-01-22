@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	markdown "github.com/MichaelMure/go-term-markdown"
 	"github.com/thejerf/suture/v4"
+	"go.uber.org/zap"
 	"golang/client/admin"
 	"golang/proto"
 	"io"
@@ -19,6 +20,9 @@ var tunnels map[string]net.Conn
 
 const usage = "Welcome to JTunnel .\n\nSource code is at `https://github.com/manoj-inukolunu/jtunnel-go`\n\nTo create a new tunnel\n\nMake a `POST` request to `http://127.0.0.1:1234/create`\nwith the payload\n\n```\n{\n    \"HostName\":\"myhost\",\n    \"TunnelName\":\"Tunnel Name\",\n    \"localServerPort\":\"3131\"\n}\n\n```\n\nThe endpoint you get is `https://myhost.migtunnel.net`\n\nAll the requests to `https://myhost.migtunnel.net` will now\n\nbe routed to your server running on port `3131`\n\n"
 
+var logger, _ = zap.NewProduction()
+var sugar = logger.Sugar()
+
 type Main struct {
 }
 
@@ -27,14 +31,14 @@ func (i *Main) Serve(ctx context.Context) error {
 	log.Println(string(result))
 	ControlConnections = make(map[string]net.Conn)
 	tunnels = make(map[string]net.Conn)
-	log.Println("Starting Admin Server on ", 1234)
+	sugar.Infow("Starting Admin Server on ", "port", 1234)
 	go admin.StartServer(1234)
 	startControlConnection()
 	return nil
 }
 
 func (i *Main) Stop() {
-	log.Println("Stopping Client")
+	sugar.Info("Stopping Client")
 }
 
 func main() {
@@ -43,7 +47,7 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	supervisor.Add(service)
 	errors := supervisor.ServeBackground(ctx)
-	log.Println(<-errors)
+	sugar.Error(<-errors)
 	cancel()
 }
 
@@ -66,13 +70,13 @@ func createLocalConnection() net.Conn {
 }
 
 func startControlConnection() {
-	log.Println("Starting Control connection")
+	sugar.Info("Starting Control connection")
 	conf := &tls.Config{
 		//InsecureSkipVerify: true,
 	}
 	conn, err := tls.Dial("tcp", "manoj.migtunnel.net:9999", conf)
 	if err != nil {
-		log.Println("Failed to establish control connection ", err.Error())
+		sugar.Errorw("Failed to establish control connection ", "Error", err.Error())
 		panic(err)
 	}
 	mutex := sync.Mutex{}
@@ -83,35 +87,35 @@ func startControlConnection() {
 
 	for {
 		message, err := proto.ReceiveMessage(conn)
-		log.Println("Received Message", message)
+		sugar.Debug("Received Message", message)
 		if err != nil {
 			if err.Error() == "EOF" {
 				panic("Server closed control connection stopping client now")
 			}
-			log.Println("Error on control connection " + err.Error())
+			sugar.Errorw("Error on control connection ", "Error", err.Error())
 		}
 		if message.MessageType == "init-request" {
 			tunnel := createNewTunnel(message)
-			log.Println("Created a new Tunnel", message)
+			sugar.Infow("Created a new Tunnel", message)
 			localConn := createLocalConnection()
-			log.Println("Created Local Connection", localConn.RemoteAddr())
+			sugar.Infow("Created Local Connection", localConn.RemoteAddr())
 			go func() {
 				_, err := io.Copy(localConn, tunnel)
 				if err != nil {
-					log.Println("Error writing data to local connection ", err.Error())
+					sugar.Errorw("Error writing data from tunnel to localTunnel", err.Error())
 				}
 			}()
-			log.Println("Writing data to local Connection")
+			sugar.Infow("Writing data to local Connection")
 			_, err := io.Copy(tunnel, localConn)
 			if err != nil {
-				log.Println("Error writing data to local connection ", err.Error())
+				sugar.Errorw("Error writing data From local connection to tunnel ", err.Error())
 			}
 
-			log.Println("Finished Writing data to tunnel")
-			tunnel.Close()
+			sugar.Infow("Finished Writing data to tunnel")
+			//tunnel.Close()
 		}
 		if message.MessageType == "ack-tunnel-create" {
-			log.Println("Received Ack for creating tunnel from the upstream server")
+			sugar.Infow("Received Ack for creating tunnel from the upstream server")
 			port, _ := strconv.Atoi(string(message.Data))
 			admin.UpdateHostNameToPortMap(message.HostName, port)
 		}

@@ -19,10 +19,10 @@ def get():
     #   return data
     if request.method == 'POST':
         try:
-            print(request.get_data())
+            # print(request.get_data())
             return hello_world(request)
-        except:
-            print("Fail")
+        except Exception as e:
+            print("Fail ", e)
             return ""
 
     print(request.headers.keys())
@@ -46,7 +46,10 @@ def test(request):
     instances = list()
     preds = {"predictions": []}
     count = 0
-    for feature in request_json['instances']:
+    if isinstance(request_json, str):
+        data = json.loads(request_json)
+
+    for feature in data['instances']:
         preds["predictions"].append({
             "score": random.uniform(0, 1)
         })
@@ -57,6 +60,7 @@ def test(request):
 
 def hello_world(request):
     headers = {'Content-Type': 'application/json'}
+    # print(request.get_json())
     return (json.dumps(test(request)), 200, headers)
 
 

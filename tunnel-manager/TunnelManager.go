@@ -44,6 +44,6 @@ func ListAllConnectionsAsString() string {
 }
 
 func SaveTunnelConnection(tunnelId string, conn net.Conn) {
-	log.Println("Saving Control Connection for host=", tunnelId)
+	log.Println("Saving Tunnel Connection for host=", tunnelId)
 	tunnelConnections.Store(tunnelId, conn)
 }

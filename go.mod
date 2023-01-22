@@ -8,6 +8,7 @@ require (
 	github.com/inconshreveable/go-vhost v1.0.0
 	github.com/prometheus/client_golang v1.14.0
 	github.com/thejerf/suture/v4 v4.0.2
+	go.uber.org/zap v1.24.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 
@@ -33,6 +34,8 @@ require (
 	github.com/prometheus/common v0.37.0 // indirect
 	github.com/prometheus/procfs v0.8.0 // indirect
 	github.com/rivo/uniseg v0.1.0 // indirect
+	go.uber.org/atomic v1.7.0 // indirect
+	go.uber.org/multierr v1.6.0 // indirect
 	golang.org/x/image v0.0.0-20191206065243-da761ea9ff43 // indirect
 	golang.org/x/net v0.0.0-20220225172249-27dd8689420f // indirect
 	golang.org/x/sys v0.0.0-20220520151302-bc2c85ada10a // indirect

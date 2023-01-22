@@ -154,7 +154,8 @@ func handleIncomingHttpRequest(conn net.Conn) {
 			// copy data between client connection and source connections
 			_, err := io.Copy(vhostConn, clientConn)
 			if err != nil {
-				log.Println("Failed")
+				log.Println("Failed ", err.Error())
+				tunnel_manager.RemoveTunnelConnection(id)
 				return
 			}
 			log.Println("Copy Done")
