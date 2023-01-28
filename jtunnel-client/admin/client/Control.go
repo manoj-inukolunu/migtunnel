@@ -48,7 +48,12 @@ func (client *Client) StartControlConnection() {
 		if message.MessageType == "init-request" {
 			tunnel := createNewTunnel(message)
 			log.Println("Created a new Tunnel")
-			localConn := createLocalConnection(tunnels.GetPortForHostName(message.HostName))
+			localConn, localConnErr := createLocalConnection(tunnels.GetPortForHostName(message.HostName))
+			if localConnErr != nil {
+				log.Printf("Could not connect to local server on port %d "+
+					"Please check if server is running.\n", tunnels.GetPortForHostName(message.HostName))
+				continue
+			}
 			log.Println("Created Local Connection", localConn.RemoteAddr())
 			go func() {
 				_, err := io.Copy(localConn, tunnel)
@@ -106,7 +111,7 @@ func createNewTunnel(message *proto.Message) net.Conn {
 	return conn
 }
 
-func createLocalConnection(port int16) net.Conn {
-	conn, _ := net.Dial("tcp", "localhost:"+strconv.Itoa(int(port)))
-	return conn
+func createLocalConnection(port int16) (net.Conn, error) {
+	conn, err := net.Dial("tcp", "localhost:"+strconv.Itoa(int(port)))
+	return conn, err
 }
