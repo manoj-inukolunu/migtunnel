@@ -22,6 +22,7 @@ brews:
       owner: manoj-inukolunu
       name: homebrew-tools
 
+
 archives:
   - format: tar.gz
     # this name template makes the OS and Arch compatible with the results of uname.
@@ -34,8 +35,8 @@ archives:
       {{- if .Arm }}v{{ .Arm }}{{ end }}
     # use zip for windows archives
     format_overrides:
-      - goos: windows
-        format: zip
+    - goos: windows
+      format: zip
 checksum:
   name_template: 'checksums.txt'
 snapshot:
