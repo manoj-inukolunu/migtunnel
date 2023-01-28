@@ -1,6 +1,8 @@
 package client
 
 import (
+	"crypto/tls"
+	"github.com/google/uuid"
 	"go.uber.org/zap"
 	"golang/jtunnel-client/admin/tunnels"
 	"golang/proto"
@@ -24,11 +26,10 @@ func init() {
 
 func (client *Client) StartControlConnection() {
 	sugar.Info("Starting Control connection")
-	/*conf := &tls.Config{
+	conf := &tls.Config{
 		//InsecureSkipVerify: true,
-	}*/
-	//net.Dial("tcp", "localhost:9999")
-	conn, err := net.Dial("tcp", "localhost:9999") /*tls.Dial("tcp", "manoj.migtunnel.net:9999", conf)*/
+	}
+	conn, err := tls.Dial("tcp", uuid.New().String()+".migtunnel.net:9999", conf)
 	if err != nil {
 		sugar.Errorw("Failed to establish control connection ", "Error", err.Error())
 		panic(err)
@@ -97,10 +98,10 @@ func checkClosed(conn net.Conn) bool {
 }
 
 func createNewTunnel(message *proto.Message) net.Conn {
-	/*conf := &tls.Config{
+	conf := &tls.Config{
 		//InsecureSkipVerify: true,
-	}*/
-	conn, _ := net.Dial("tcp", "localhost:2121") /*tls.Dial("tcp", "manoj.migtunnel.net:2121", conf)*/
+	}
+	conn, _ := tls.Dial("tcp", uuid.New().String()+".migtunnel.net:2121", conf)
 	mutex := sync.Mutex{}
 	mutex.Lock()
 	tunnelsMap[message.TunnelId] = conn
@@ -110,7 +111,6 @@ func createNewTunnel(message *proto.Message) net.Conn {
 }
 
 func createLocalConnection(port int16) net.Conn {
-
 	conn, _ := net.Dial("tcp", "localhost:"+strconv.Itoa(int(port)))
 	return conn
 }
