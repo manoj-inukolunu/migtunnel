@@ -19,6 +19,8 @@ def get():
     #   return data
     if request.method == 'POST':
         try:
+            # print(jsonify(request.get_json()))
+            # print(request.get_json())
             # print(request.get_data())
             return hello_world(request)
         except Exception as e:
@@ -27,7 +29,7 @@ def get():
 
     print(request.headers.keys())
     print(request.headers)
-    resp = Response("")
+    resp = Response("Hello World!!!")
     resp.headers['x-amz-apigw-id'] = "asdf"
     return resp
 

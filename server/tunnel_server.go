@@ -117,7 +117,7 @@ func handleClientTunnelServerConnection(conn net.Conn) {
 
 func startHttpServer(port int) {
 	httpListener, _ := net.Listen("tcp", "localhost:"+strconv.Itoa(port))
-	log.Println("Starting http server")
+	log.Println("Starting client server")
 	for {
 		conn, err := httpListener.Accept()
 		if err != nil {
@@ -132,14 +132,14 @@ func handleIncomingHttpRequest(conn net.Conn) {
 	id := uuid.New().String()
 	vhostConn, err := vhost.HTTP(conn)
 	if err != nil {
-		log.Println("Not a valid http connection", err)
+		log.Println("Not a valid client connection", err)
 	}
 	controlConnection, ok := control_manager.GetControlConnection(vhostConn.Host())
 	if !ok {
 		log.Println("Control Connection not found for host=", vhostConn.Host())
 		return
 	}
-	err = proto.SendMessage(proto.NewMessage("localhost", id, "init-request", []byte(id)), controlConnection)
+	err = proto.SendMessage(proto.NewMessage(vhostConn.Host(), id, "init-request", []byte(id)), controlConnection)
 	if err != nil {
 		log.Println("Could not send message to client connection for host", vhostConn.Host())
 		return
