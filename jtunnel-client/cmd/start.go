@@ -35,7 +35,7 @@ func (main *Main) Serve(ctx context.Context) error {
 	result := markdown.Render(usage, 80, 6)
 	log.Println(string(result))
 	c := client.Client{ClientConfig: data.ClientConfig{AdminPort: 1234}}
-	main.cmd.Printf("Starting Admin Server on %s", 1234)
+	main.cmd.Printf("Starting Admin Server on %d \n", 1234)
 	go c.StartAdminServer()
 	c.StartControlConnection()
 	return nil

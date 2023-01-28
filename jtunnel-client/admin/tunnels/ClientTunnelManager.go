@@ -2,7 +2,6 @@ package tunnels
 
 import (
 	"errors"
-	"go.uber.org/zap"
 	"golang/jtunnel-client/admin/data"
 	"golang/proto"
 	"log"
@@ -15,9 +14,6 @@ var controlConnections = sync.Map{}
 var registeredTunnels = sync.Map{}
 
 const controlConnectionKey = "Main"
-
-var logger, _ = zap.NewProduction()
-var sugar = logger.Sugar()
 
 func GetRegisteredTunnels() sync.Map {
 	return registeredTunnels

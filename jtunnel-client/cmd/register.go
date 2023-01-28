@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/google/uuid"
 	"github.com/spf13/cobra"
-	"go.uber.org/zap"
 	"golang/jtunnel-client/admin/data"
 	"golang/jtunnel-client/util"
 )
@@ -12,9 +11,6 @@ import (
 var hostName string
 var localServerPort int16
 var adminServerPort int16
-
-var logger, _ = zap.NewProduction()
-var sugar = logger.Sugar()
 
 var registerCmd = &cobra.Command{
 	Use:   "register",

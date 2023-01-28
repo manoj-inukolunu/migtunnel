@@ -1,7 +1,7 @@
 import json
 import random
 
-from flask import Flask, jsonify
+from flask import Flask
 from flask import Response
 from flask import request
 
@@ -19,8 +19,8 @@ def get():
     #   return data
     if request.method == 'POST':
         try:
-            print(jsonify(request.get_json()))
-            print(request.get_json())
+            # print(jsonify(request.get_json()))
+            # print(request.get_json())
             # print(request.get_data())
             return hello_world(request)
         except Exception as e:
@@ -65,7 +65,7 @@ def test(request):
 def hello_world(request):
     headers = {'Content-Type': 'application/json'}
     # print(request.get_json())
-    return (json.dumps(test(request)), 503, headers)
+    return (json.dumps(test(request)), 200, headers)
 
 
 if __name__ == '__main__':

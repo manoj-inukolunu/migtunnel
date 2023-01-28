@@ -3,18 +3,15 @@ package client
 import (
 	"crypto/tls"
 	"github.com/google/uuid"
-	"go.uber.org/zap"
 	"golang/jtunnel-client/admin/tunnels"
 	"golang/proto"
 	"io"
+	"log"
 	"net"
 	"strconv"
 	"sync"
 	"time"
 )
-
-var logger, _ = zap.NewProduction()
-var sugar = logger.Sugar()
 
 var controlConnections map[string]net.Conn
 var tunnelsMap map[string]net.Conn
@@ -25,13 +22,13 @@ func init() {
 }
 
 func (client *Client) StartControlConnection() {
-	sugar.Info("Starting Control connection")
+	log.Println("Starting Control connection")
 	conf := &tls.Config{
 		//InsecureSkipVerify: true,
 	}
 	conn, err := tls.Dial("tcp", uuid.New().String()+".migtunnel.net:9999", conf)
 	if err != nil {
-		sugar.Errorw("Failed to establish control connection ", "Error", err.Error())
+		log.Println("Failed to establish control connection ", "Error", err.Error())
 		panic(err)
 	}
 	mutex := sync.Mutex{}
@@ -42,35 +39,34 @@ func (client *Client) StartControlConnection() {
 
 	for {
 		message, err := proto.ReceiveMessage(conn)
-		sugar.Debug("Received Message", message)
 		if err != nil {
 			if err.Error() == "EOF" {
 				panic("Server closed control connection stopping client now")
 			}
-			sugar.Errorw("Error on control connection ", "Error", err.Error())
+			log.Println("Error on control connection ", "Error", err.Error())
 		}
 		if message.MessageType == "init-request" {
 			tunnel := createNewTunnel(message)
-			sugar.Infow("Created a new Tunnel", message)
+			log.Println("Created a new Tunnel")
 			localConn := createLocalConnection(tunnels.GetPortForHostName(message.HostName))
-			sugar.Infow("Created Local Connection", localConn.RemoteAddr())
+			log.Println("Created Local Connection", localConn.RemoteAddr())
 			go func() {
 				_, err := io.Copy(localConn, tunnel)
 				if err != nil {
 					closeConnections(localConn, tunnel)
 				}
 			}()
-			sugar.Infow("Writing data to local Connection")
+			log.Println("Writing data to local Connection")
 			_, err := io.Copy(tunnel, localConn)
 			if err != nil {
 				closeConnections(localConn, tunnel)
 			}
 
-			sugar.Infow("Finished Writing data to tunnel")
+			log.Println("Finished Writing data to tunnel")
 			closeConnections(localConn, tunnel)
 		}
 		if message.MessageType == "ack-tunnel-create" {
-			sugar.Infow("Received Ack for creating tunnel from the upstream server")
+			log.Println("Received Ack for creating tunnel from the upstream server")
 			port, _ := strconv.Atoi(string(message.Data))
 			tunnels.UpdateHostNameToPortMap(message.HostName, port)
 		}
@@ -90,7 +86,7 @@ func checkClosed(conn net.Conn) bool {
 	one := make([]byte, 1)
 	conn.SetReadDeadline(time.Now())
 	if _, err := conn.Read(one); err == io.EOF {
-		sugar.Infow("Detected closed Local connection")
+		log.Println("Detected closed Local connection")
 		conn.Close()
 		return true
 	}
