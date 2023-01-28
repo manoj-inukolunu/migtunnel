@@ -29,7 +29,7 @@ def get():
 
     print(request.headers.keys())
     print(request.headers)
-    resp = Response("")
+    resp = Response("Hello World!!!")
     resp.headers['x-amz-apigw-id'] = "asdf"
     return resp
 

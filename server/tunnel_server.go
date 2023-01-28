@@ -117,7 +117,7 @@ func handleClientTunnelServerConnection(conn net.Conn) {
 
 func startHttpServer(port int) {
 	httpListener, _ := net.Listen("tcp", "localhost:"+strconv.Itoa(port))
-	log.Println("Starting http server")
+	log.Println("Starting client server")
 	for {
 		conn, err := httpListener.Accept()
 		if err != nil {
@@ -132,7 +132,7 @@ func handleIncomingHttpRequest(conn net.Conn) {
 	id := uuid.New().String()
 	vhostConn, err := vhost.HTTP(conn)
 	if err != nil {
-		log.Println("Not a valid http connection", err)
+		log.Println("Not a valid client connection", err)
 	}
 	controlConnection, ok := control_manager.GetControlConnection(vhostConn.Host())
 	if !ok {
