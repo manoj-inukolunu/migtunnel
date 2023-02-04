@@ -160,9 +160,15 @@ func handleIncomingHttpRequest(conn net.Conn) {
 			}
 			log.Println("Copy Done")
 			tunnel_manager.RemoveTunnelConnection(id)
+			// close client tunnel connection
 			clientConnError := clientConn.Close()
 			if clientConnError != nil {
 				log.Println("Failed to close Client Tunnel Connection ", clientConnError.Error())
+			}
+			//close http connection
+			vHostConnError := vhostConn.Close()
+			if vHostConnError != nil {
+				log.Println("Failed to close Http Connection ", clientConnError.Error())
 			}
 			break
 		}

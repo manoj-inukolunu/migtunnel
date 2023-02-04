@@ -80,10 +80,18 @@ func (client *Client) StartControlConnection() {
 
 func closeConnections(localConn net.Conn, tunnel net.Conn) {
 	if !checkClosed(localConn) {
-		localConn.Close()
+		err := localConn.Close()
+		if err != nil {
+			log.Println("Error while closing local connection ", err.Error())
+			return
+		}
 	}
 	if !checkClosed(tunnel) {
-		tunnel.Close()
+		err := tunnel.Close()
+		if err != nil {
+			log.Println("Error while closing tunnel connection ", err.Error())
+			return
+		}
 	}
 }
 
