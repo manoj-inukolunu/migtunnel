@@ -12,6 +12,7 @@ import (
 var controlConnections map[string]net.Conn
 
 func init() {
+	controlConnections := make(map[string]net.Conn)
 	log.Println("Init for ControlConnectionManager called")
 	ticker := time.NewTicker(15 * time.Second)
 	quit := make(chan struct{})
