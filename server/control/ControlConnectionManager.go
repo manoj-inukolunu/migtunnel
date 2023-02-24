@@ -87,7 +87,7 @@ func (c *Server) handleControlConnection(conn net.Conn) {
 
 		if message.MessageType == "register" {
 			log.Printf("Registering %s\n", message)
-			c.saveControlConnection(message.HostName /*+".migtunnel.net"*/, conn)
+			c.saveControlConnection(message.HostName+".migtunnel.net", conn)
 		}
 
 		log.Println("Received Message ", message)
