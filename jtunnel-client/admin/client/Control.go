@@ -1,8 +1,6 @@
 package client
 
 import (
-	"crypto/tls"
-	"github.com/google/uuid"
 	"golang/jtunnel-client/admin/tunnels"
 	"golang/proto"
 	"io"
@@ -16,6 +14,9 @@ import (
 var controlConnections map[string]net.Conn
 var tunnelsMap map[string]net.Conn
 
+// uuid.New().String() + ".migtunnel.net"
+const remote = "localhost"
+
 func init() {
 	controlConnections = make(map[string]net.Conn)
 	tunnelsMap = make(map[string]net.Conn)
@@ -23,10 +24,11 @@ func init() {
 
 func (client *Client) StartControlConnection() {
 	log.Println("Starting Control connection")
-	conf := &tls.Config{
+	/*conf := &tls.Config{
 		//InsecureSkipVerify: true,
 	}
-	conn, err := tls.Dial("tcp", uuid.New().String()+".migtunnel.net:9999", conf)
+	conn, err := tls.Dial("tcp", remote+":9999", conf)*/
+	conn, err := net.Dial("tcp", remote+":9999")
 	if err != nil {
 		log.Println("Failed to establish control connection ", "Error", err.Error())
 		panic(err)
@@ -107,10 +109,11 @@ func checkClosed(conn net.Conn) bool {
 }
 
 func createNewTunnel(message *proto.Message) net.Conn {
-	conf := &tls.Config{
+	/*conf := &tls.Config{
 		//InsecureSkipVerify: true,
-	}
-	conn, _ := tls.Dial("tcp", uuid.New().String()+".migtunnel.net:2121", conf)
+	}*/
+	//conn, _ := tls.Dial("tcp", remote+":2121", conf)
+	conn, _ := net.Dial("tcp", remote+":2121")
 	mutex := sync.Mutex{}
 	mutex.Lock()
 	tunnelsMap[message.TunnelId] = conn

@@ -4,9 +4,13 @@ import (
 	"context"
 	"crypto/tls"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"golang/server"
+	"golang/server/admin"
+	"golang/server/control"
+	myhttp "golang/server/http"
+	"golang/server/tunnel"
 	"gopkg.in/yaml.v3"
 	"log"
+	"net"
 	"net/http"
 	_ "net/http/pprof"
 	"os"
@@ -14,6 +18,42 @@ import (
 )
 
 type Main struct {
+}
+
+type TunnelServerConfig struct {
+	ClientControlServerPort int
+	ServerHttpServerPort    int
+	ClientTunnelServerPort  int
+	ServerAdminServerPort   int
+	ServerTlsConfig         *tls.Config
+}
+
+func start(tunnelServerConfig TunnelServerConfig) {
+	useTLS := tunnelServerConfig.ServerTlsConfig != nil
+	controlManager := control.Server{
+		ControlConnections: make(map[string]net.Conn),
+		ControlServerPort:  tunnelServerConfig.ClientControlServerPort,
+		UseTLS:             useTLS,
+	}
+	controlManager.InitCronitorHeartbeat()
+	controlManager.CheckConnections()
+	httpChan := make(chan string)
+	//Start all the servers
+	httpServer := myhttp.Server{
+		TunnelChannel:  httpChan,
+		Port:           tunnelServerConfig.ServerHttpServerPort,
+		ControlManager: controlManager,
+	}
+	tunnelServer := tunnel.Server{
+		Port:           tunnelServerConfig.ClientTunnelServerPort,
+		HttpServerChan: httpChan,
+		TlsConfig:      tunnelServerConfig.ServerTlsConfig,
+	}
+	go httpServer.Start()
+	go admin.StartAdminServer(tunnelServerConfig.ServerAdminServerPort, controlManager)
+	tunnelServer.Start()
+	controlManager.Start()
+
 }
 
 func (i *Main) Stop() {
@@ -26,34 +66,14 @@ func main() {
 			log.Println("Recover called from main error is , program exiting", r)
 		}
 	}()
-
-	/*sigc := make(chan os.Signal, 1)
-
-	signal.Notify(sigc)
-
-	go func() {
-		s := <-sigc
-		log.Println(s.String())
-	}()*/
-
 	go func() {
 		log.Println("Metrics endpoing at /metrics")
 		http.Handle("/metrics", promhttp.Handler())
 		http.ListenAndServe(":2112", nil)
 	}()
-
 	go func() {
 		log.Println(http.ListenAndServe("localhost:6060", nil))
 	}()
-
-	/*log.Println("Starting Main with supervisor")
-	supervisor := suture.NewSimple("Main")
-	service := &Main{}
-	ctx, cancel := context.WithCancel(context.Background())
-	supervisor.Add(service)
-	errors := supervisor.ServeBackground(ctx)
-	log.Println(<-errors)
-	cancel()*/
 	run()
 
 }
@@ -83,14 +103,14 @@ func run() {
 		log.Println("Not using TLS")
 	}
 
-	tunnelServerConfig := server.TunnelServerConfig{
+	tunnelServerConfig := TunnelServerConfig{
 		ClientTunnelServerPort:  2121,
 		ClientControlServerPort: 9999,
 		ServerHttpServerPort:    2020,
 		ServerAdminServerPort:   9090,
 		ServerTlsConfig:         config,
 	}
-	server.Start(tunnelServerConfig)
+	start(tunnelServerConfig)
 }
 
 func (i *Main) Serve(ctx context.Context) error {
@@ -118,14 +138,14 @@ func (i *Main) Serve(ctx context.Context) error {
 		log.Println("Not using TLS")
 	}
 
-	tunnelServerConfig := server.TunnelServerConfig{
+	tunnelServerConfig := TunnelServerConfig{
 		ClientTunnelServerPort:  9999,
 		ClientControlServerPort: 2121,
 		ServerHttpServerPort:    2020,
 		ServerAdminServerPort:   9090,
 		ServerTlsConfig:         config,
 	}
-	server.Start(tunnelServerConfig)
+	start(tunnelServerConfig)
 
 	return nil
 }

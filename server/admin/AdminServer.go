@@ -1,13 +1,13 @@
 package admin
 
 import (
-	control_manager "golang/control-manager"
+	control_manager "golang/server/control"
 	tunnel_manager "golang/tunnel-manager"
 	"log"
 	"net/http"
 )
 
-func StartAdminServer(port int, manager control_manager.ControlConnectionManager) {
+func StartAdminServer(port int, manager control_manager.Server) {
 
 	http.HandleFunc("/tunnels", listTunnels)
 	http.HandleFunc("/control", func(writer http.ResponseWriter, request *http.Request) {
