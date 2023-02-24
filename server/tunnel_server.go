@@ -25,6 +25,7 @@ type TunnelServerConfig struct {
 func Start(tunnelServerConfig TunnelServerConfig) {
 	useTLS := (tunnelServerConfig.ServerTlsConfig != nil)
 	controlManager := control_manager.ControlConnectionManager{ControlConnections: make(map[string]net.Conn)}
+	controlManager.InitCronitorHeartbeat()
 	//Start all the servers
 	go startHttpServer(tunnelServerConfig.ServerHttpServerPort, controlManager)
 	go admin.StartAdminServer(tunnelServerConfig.ServerAdminServerPort, controlManager)
