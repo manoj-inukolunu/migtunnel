@@ -6,11 +6,10 @@ import (
 	"net"
 	"net/http"
 	"strings"
-	"sync"
 	"time"
 )
 
-var controlConnections = sync.Map{}
+var controlConnections map[string]net.Conn
 
 func init() {
 	log.Println("Init for ControlConnectionManager called")
@@ -21,15 +20,13 @@ func init() {
 			select {
 			case <-ticker.C:
 				log.Println("Checking for closed control connections")
-				controlConnections.Range(func(hostName, connection any) bool {
-					conn := connection.(net.Conn)
+				for hostName, conn := range controlConnections {
 					err := proto.SendMessage(proto.PingMessage(), conn)
 					if err != nil {
 						log.Printf("Could not send ping to hostName=%s ,error=%s, will be closing connection\n", hostName, err)
-						controlConnections.Delete(hostName)
+						delete(controlConnections, hostName)
 					}
-					return true
-				})
+				}
 			case <-quit:
 				ticker.Stop()
 				return
@@ -62,16 +59,16 @@ func initCronitorHeartbeat() {
 
 func ListAllConnectionsAsString() string {
 	var s = strings.Builder{}
-	controlConnections.Range(func(key, value any) bool {
-		s.WriteString(key.(string))
+	for hostName, _ := range controlConnections {
+		s.WriteString(hostName)
 		s.WriteString("\n")
-		return true
-	})
+	}
+
 	return s.String()
 }
 
 func GetControlConnection(hostName string) (net.Conn, bool) {
-	conn, ok := controlConnections.Load(hostName)
+	conn, ok := controlConnections[(hostName)]
 	if ok {
 		return conn.(net.Conn), ok
 	}
@@ -80,6 +77,6 @@ func GetControlConnection(hostName string) (net.Conn, bool) {
 
 func SaveControlConnection(hostName string, conn net.Conn) {
 	log.Println("Saving Control Connection for host=", hostName)
-	controlConnections.Store(hostName, conn)
+	controlConnections[hostName] = conn
 
 }
