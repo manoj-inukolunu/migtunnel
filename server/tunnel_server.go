@@ -24,14 +24,14 @@ type TunnelServerConfig struct {
 
 func Start(tunnelServerConfig TunnelServerConfig) {
 	useTLS := (tunnelServerConfig.ServerTlsConfig != nil)
-
+	controlManager := control_manager.ControlConnectionManager{ControlConnections: make(map[string]net.Conn)}
 	//Start all the servers
-	go startHttpServer(tunnelServerConfig.ServerHttpServerPort)
-	go admin.StartAdminServer(tunnelServerConfig.ServerAdminServerPort)
+	go startHttpServer(tunnelServerConfig.ServerHttpServerPort, controlManager)
+	go admin.StartAdminServer(tunnelServerConfig.ServerAdminServerPort, controlManager)
 	if useTLS {
-		go startTLSClientTunnelServer(tunnelServerConfig)
+		go startTLSClientTunnelServer(tunnelServerConfig, controlManager)
 	} else {
-		go startClientTunnelServer(tunnelServerConfig.ClientTunnelServerPort)
+		go startClientTunnelServer(tunnelServerConfig.ClientTunnelServerPort, controlManager)
 	}
 
 	var listener net.Listener
@@ -55,12 +55,12 @@ func Start(tunnelServerConfig TunnelServerConfig) {
 			log.Printf("Could not accept connection error=%s\n", err.Error())
 		}
 		log.Printf("Received Connection from %s \n", conn.RemoteAddr())
-		go handleControlConnection(conn)
+		go handleControlConnection(conn, controlManager)
 	}
 
 }
 
-func startTLSClientTunnelServer(config TunnelServerConfig) {
+func startTLSClientTunnelServer(config TunnelServerConfig, manager control_manager.ControlConnectionManager) {
 	ln, err := tls.Listen("tcp", ":"+strconv.Itoa(config.ClientTunnelServerPort), config.ServerTlsConfig)
 	if err != nil {
 		log.Println(err)
@@ -70,7 +70,7 @@ func startTLSClientTunnelServer(config TunnelServerConfig) {
 	workWithListener(ln)
 }
 
-func startClientTunnelServer(port int) {
+func startClientTunnelServer(port int, manager control_manager.ControlConnectionManager) {
 	log.Println("Starting Client Tunnel Server on port", port)
 	httpListener, _ := net.Listen("tcp", ":"+strconv.Itoa(port))
 	workWithListener(httpListener)
@@ -115,7 +115,7 @@ func handleClientTunnelServerConnection(conn net.Conn) {
 
 }
 
-func startHttpServer(port int) {
+func startHttpServer(port int, controlManager control_manager.ControlConnectionManager) {
 	httpListener, _ := net.Listen("tcp", "localhost:"+strconv.Itoa(port))
 	log.Println("Starting client server")
 	for {
@@ -124,19 +124,19 @@ func startHttpServer(port int) {
 			log.Println("Error ", err)
 		}
 		log.Println("Received connection from ", conn)
-		go handleIncomingHttpRequest(conn)
+		go handleIncomingHttpRequest(conn, controlManager)
 	}
 
 }
 
-func handleIncomingHttpRequest(conn net.Conn) {
+func handleIncomingHttpRequest(conn net.Conn, manager control_manager.ControlConnectionManager) {
 	id := uuid.New().String()
 	vhostConn, err := vhost.HTTP(conn)
 	if err != nil {
 		log.Println("Not a valid client connection", err)
 	}
 	log.Println("Converted from conn to vhostConn ", vhostConn)
-	controlConnection, ok := control_manager.GetControlConnection(vhostConn.Host())
+	controlConnection, ok := manager.GetControlConnection(vhostConn.Host())
 	if !ok {
 		log.Println("Control Connection not found for host=", vhostConn.Host())
 		return
@@ -188,7 +188,7 @@ func handleIncomingHttpRequest(conn net.Conn) {
 	}
 }
 
-func handleControlConnection(conn net.Conn) {
+func handleControlConnection(conn net.Conn, manager control_manager.ControlConnectionManager) {
 	for {
 		message, err := proto.ReceiveMessage(conn)
 
@@ -205,7 +205,7 @@ func handleControlConnection(conn net.Conn) {
 
 		if message.MessageType == "register" {
 			log.Printf("Registering %s\n", message)
-			control_manager.SaveControlConnection(message.HostName+".migtunnel.net", conn)
+			manager.SaveControlConnection(message.HostName+".migtunnel.net", conn)
 		}
 
 		log.Println("Received Message ", message)

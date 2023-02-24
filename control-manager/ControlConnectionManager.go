@@ -9,10 +9,11 @@ import (
 	"time"
 )
 
-var controlConnections map[string]net.Conn
+type ControlConnectionManager struct {
+	ControlConnections map[string]net.Conn
+}
 
-func init() {
-	controlConnections := make(map[string]net.Conn)
+func (a *ControlConnectionManager) CheckConnections() {
 	log.Println("Init for ControlConnectionManager called")
 	ticker := time.NewTicker(15 * time.Second)
 	quit := make(chan struct{})
@@ -21,11 +22,11 @@ func init() {
 			select {
 			case <-ticker.C:
 				log.Println("Checking for closed control connections")
-				for hostName, conn := range controlConnections {
+				for hostName, conn := range a.ControlConnections {
 					err := proto.SendMessage(proto.PingMessage(), conn)
 					if err != nil {
 						log.Printf("Could not send ping to hostName=%s ,error=%s, will be closing connection\n", hostName, err)
-						delete(controlConnections, hostName)
+						delete(a.ControlConnections, hostName)
 					}
 				}
 			case <-quit:
@@ -35,10 +36,9 @@ func init() {
 		}
 	}()
 
-	initCronitorHeartbeat()
 }
 
-func initCronitorHeartbeat() {
+func (a *ControlConnectionManager) InitCronitorHeartbeat() {
 	log.Println("Starting Cronitor Heartbeat , ticker at 60 seconds")
 	ticker := time.NewTicker(60 * time.Second)
 	quit := make(chan struct{})
@@ -58,9 +58,9 @@ func initCronitorHeartbeat() {
 	}()
 }
 
-func ListAllConnectionsAsString() string {
+func (a *ControlConnectionManager) ListAllConnectionsAsString() string {
 	var s = strings.Builder{}
-	for hostName, _ := range controlConnections {
+	for hostName, _ := range a.ControlConnections {
 		s.WriteString(hostName)
 		s.WriteString("\n")
 	}
@@ -68,16 +68,16 @@ func ListAllConnectionsAsString() string {
 	return s.String()
 }
 
-func GetControlConnection(hostName string) (net.Conn, bool) {
-	conn, ok := controlConnections[(hostName)]
+func (a *ControlConnectionManager) GetControlConnection(hostName string) (net.Conn, bool) {
+	conn, ok := a.ControlConnections[(hostName)]
 	if ok {
 		return conn.(net.Conn), ok
 	}
 	return nil, false
 }
 
-func SaveControlConnection(hostName string, conn net.Conn) {
+func (a *ControlConnectionManager) SaveControlConnection(hostName string, conn net.Conn) {
 	log.Println("Saving Control Connection for host=", hostName)
-	controlConnections[hostName] = conn
+	a.ControlConnections[hostName] = conn
 
 }

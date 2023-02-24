@@ -7,10 +7,15 @@ import (
 	"net/http"
 )
 
-func StartAdminServer(port int) {
+func StartAdminServer(port int, manager control_manager.ControlConnectionManager) {
 
 	http.HandleFunc("/tunnels", listTunnels)
-	http.HandleFunc("/control", listControlConnections)
+	http.HandleFunc("/control", func(writer http.ResponseWriter, request *http.Request) {
+		_, err := writer.Write([]byte(manager.ListAllConnectionsAsString()))
+		if err != nil {
+			log.Println("Failed to list tunnels", err)
+		}
+	})
 
 	err := http.ListenAndServe(":8090", nil)
 	if err != nil {
@@ -18,13 +23,6 @@ func StartAdminServer(port int) {
 		panic(err)
 	}
 	log.Println("Started Admin Server on ", 8090)
-}
-
-func listControlConnections(writer http.ResponseWriter, request *http.Request) {
-	_, err := writer.Write([]byte(control_manager.ListAllConnectionsAsString()))
-	if err != nil {
-		log.Println("Failed to list tunnels", err)
-	}
 }
 
 func listTunnels(writer http.ResponseWriter, request *http.Request) {
