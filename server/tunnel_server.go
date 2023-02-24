@@ -141,6 +141,7 @@ func handleIncomingHttpRequest(conn net.Conn, manager control_manager.ControlCon
 		log.Println("Control Connection not found for host=", vhostConn.Host())
 		return
 	}
+	log.Println("Found control connection ")
 	err = proto.SendMessage(proto.NewMessage(vhostConn.Host(), id, "init-request", []byte(id)), controlConnection)
 	if err != nil {
 		log.Println("Could not send message to client connection for host", vhostConn.Host())
