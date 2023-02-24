@@ -150,7 +150,12 @@ func handleIncomingHttpRequest(conn net.Conn) {
 			log.Println("Found Connection for tunnelId=", id)
 			// new connection created between client and server
 			// copy data between source connection and client connection in a new go routine
-			go io.Copy(clientConn, vhostConn)
+			go func() {
+				_, err := io.Copy(clientConn, vhostConn)
+				if err != nil {
+					log.Println("Failed to copy data from http to client ", err.Error())
+				}
+			}()
 			// copy data between client connection and source connections
 			_, err := io.Copy(vhostConn, clientConn)
 			if err != nil {
@@ -168,7 +173,12 @@ func handleIncomingHttpRequest(conn net.Conn) {
 			//close http connection
 			vHostConnError := vhostConn.Close()
 			if vHostConnError != nil {
-				log.Println("Failed to close Http Connection ", clientConnError.Error())
+				log.Println("Failed to close Http Connection ", vHostConnError.Error())
+			}
+			//close http connection
+			connError := conn.Close()
+			if connError != nil {
+				log.Println("Failed to close Http Connection ", connError.Error())
 			}
 			break
 		}
