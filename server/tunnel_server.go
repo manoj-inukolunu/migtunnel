@@ -123,6 +123,7 @@ func startHttpServer(port int) {
 		if err != nil {
 			log.Println("Error ", err)
 		}
+		log.Println("Received connection from ", conn)
 		go handleIncomingHttpRequest(conn)
 	}
 
@@ -134,6 +135,7 @@ func handleIncomingHttpRequest(conn net.Conn) {
 	if err != nil {
 		log.Println("Not a valid client connection", err)
 	}
+	log.Println("Converted from conn to vhostConn ", vhostConn)
 	controlConnection, ok := control_manager.GetControlConnection(vhostConn.Host())
 	if !ok {
 		log.Println("Control Connection not found for host=", vhostConn.Host())
