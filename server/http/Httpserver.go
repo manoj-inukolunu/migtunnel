@@ -82,10 +82,13 @@ func (s *Server) handleIncomingHttpRequest(conn net.Conn) {
 			if connError != nil {
 				log.Println("Failed to close Http Connection ", connError.Error())
 			}
-			break
+			s.cleanUp(id)
+			return
 		}
-		log.Println("Removing channel for tunnel id = ", id)
-		delete(s.TunnelManager.HttpServerChannels, id)
-		return
 	}
+}
+
+func (s *Server) cleanUp(id string) {
+	log.Println("Removing channel for tunnel id = ", id)
+	delete(s.TunnelManager.HttpServerChannels, id)
 }
