@@ -12,14 +12,14 @@ import (
 	"time"
 )
 
-type Server struct {
+type ControlManager struct {
 	ControlConnections map[string]net.Conn
 	ControlServerPort  int
 	ServerTlsConfig    *tls.Config
 	UseTLS             bool
 }
 
-func (a *Server) CheckConnections() {
+func (a *ControlManager) CheckConnections() {
 	log.Println("Init for ControlServer called")
 	ticker := time.NewTicker(15 * time.Second)
 	quit := make(chan struct{})
@@ -27,7 +27,7 @@ func (a *Server) CheckConnections() {
 		for {
 			select {
 			case <-ticker.C:
-				log.Println("Checking for closed control connections")
+				//log.Println("Checking for closed control connections")
 				for hostName, conn := range a.ControlConnections {
 					err := proto.SendMessage(proto.PingMessage(), conn)
 					if err != nil {
@@ -44,7 +44,7 @@ func (a *Server) CheckConnections() {
 
 }
 
-func (c *Server) Start() {
+func (c *ControlManager) Start() {
 	var listener net.Listener
 	var err error
 	addr := ":" + strconv.Itoa(c.ControlServerPort)
@@ -70,7 +70,7 @@ func (c *Server) Start() {
 	}
 }
 
-func (c *Server) handleControlConnection(conn net.Conn) {
+func (c *ControlManager) handleControlConnection(conn net.Conn) {
 	for {
 		message, err := proto.ReceiveMessage(conn)
 
@@ -96,7 +96,7 @@ func (c *Server) handleControlConnection(conn net.Conn) {
 
 }
 
-func (a *Server) InitCronitorHeartbeat() {
+func (a *ControlManager) InitCronitorHeartbeat() {
 	log.Println("Starting Cronitor Heartbeat , ticker at 60 seconds")
 	ticker := time.NewTicker(60 * time.Second)
 	quit := make(chan struct{})
@@ -116,7 +116,7 @@ func (a *Server) InitCronitorHeartbeat() {
 	}()
 }
 
-func (a *Server) ListAllConnectionsAsString() string {
+func (a *ControlManager) ListAllConnectionsAsString() string {
 	var s = strings.Builder{}
 	for hostName, _ := range a.ControlConnections {
 		s.WriteString(hostName)
@@ -125,7 +125,7 @@ func (a *Server) ListAllConnectionsAsString() string {
 	return s.String()
 }
 
-func (a *Server) GetControlConnection(hostName string) (net.Conn, bool) {
+func (a *ControlManager) GetControlConnection(hostName string) (net.Conn, bool) {
 	conn, ok := a.ControlConnections[(hostName)]
 	if ok {
 		return conn.(net.Conn), ok
@@ -133,7 +133,7 @@ func (a *Server) GetControlConnection(hostName string) (net.Conn, bool) {
 	return nil, false
 }
 
-func (a *Server) SendMessage(message proto.Message) {
+func (a *ControlManager) SendMessage(message proto.Message) {
 	controlConnection, ok := a.GetControlConnection(message.HostName)
 	if !ok {
 		log.Println("Control Connection not found for host=", message.HostName)
@@ -147,7 +147,7 @@ func (a *Server) SendMessage(message proto.Message) {
 	}
 }
 
-func (a *Server) saveControlConnection(hostName string, conn net.Conn) {
+func (a *ControlManager) saveControlConnection(hostName string, conn net.Conn) {
 	log.Println("Saving Control Connection for host=", hostName)
 	a.ControlConnections[hostName] = conn
 

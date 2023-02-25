@@ -8,6 +8,7 @@ import (
 	"golang/server/control"
 	myhttp "golang/server/http"
 	"golang/server/tunnel"
+	tunnelmanager "golang/tunnel-manager"
 	"gopkg.in/yaml.v3"
 	"log"
 	"net"
@@ -30,10 +31,13 @@ type TunnelServerConfig struct {
 
 func start(tunnelServerConfig TunnelServerConfig) {
 	useTLS := tunnelServerConfig.ServerTlsConfig != nil
-	controlManager := control.Server{
+	controlManager := control.ControlManager{
 		ControlConnections: make(map[string]net.Conn),
 		ControlServerPort:  tunnelServerConfig.ClientControlServerPort,
 		UseTLS:             useTLS,
+	}
+	tunnelManager := tunnelmanager.TunnelManager{
+		TunnelConnections: make(map[string]net.Conn),
 	}
 	controlManager.InitCronitorHeartbeat()
 	controlManager.CheckConnections()
@@ -43,14 +47,21 @@ func start(tunnelServerConfig TunnelServerConfig) {
 		TunnelChannel:  httpChan,
 		Port:           tunnelServerConfig.ServerHttpServerPort,
 		ControlManager: controlManager,
+		TunnelManager:  tunnelManager,
 	}
 	tunnelServer := tunnel.Server{
 		Port:           tunnelServerConfig.ClientTunnelServerPort,
 		HttpServerChan: httpChan,
 		TlsConfig:      tunnelServerConfig.ServerTlsConfig,
+		TunnelManager:  tunnelManager,
+	}
+	adminServer := admin.Server{
+		TunnelManger:   tunnelManager,
+		ControlManager: controlManager,
+		Port:           tunnelServerConfig.ServerAdminServerPort,
 	}
 	go httpServer.Start()
-	go admin.StartAdminServer(tunnelServerConfig.ServerAdminServerPort, controlManager)
+	go adminServer.Start()
 	tunnelServer.Start()
 	controlManager.Start()
 

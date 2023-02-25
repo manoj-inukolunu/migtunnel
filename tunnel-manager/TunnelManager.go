@@ -4,46 +4,42 @@ import (
 	"log"
 	"net"
 	"strings"
-	"sync"
 )
 
-var tunnelConnections = sync.Map{}
-
-func init() {
-	log.Println("Init for Tunnel Manager called")
+type TunnelManager struct {
+	TunnelConnections map[string]net.Conn
 }
 
-func RemoveTunnelConnection(tunnelId string) {
-	if conn, ok := GetTunnelConnection(tunnelId); ok {
+func (t *TunnelManager) RemoveTunnelConnection(tunnelId string) {
+	if conn, ok := t.GetTunnelConnection(tunnelId); ok {
 		err := conn.Close()
 		if err != nil {
 			log.Println("Tunnel connection is already closed for TunnelId=", tunnelId)
-			tunnelConnections.Delete(tunnelId)
+			delete(t.TunnelConnections, tunnelId)
 			return
 		}
-		tunnelConnections.Delete(tunnelId)
+		delete(t.TunnelConnections, tunnelId)
 	}
 }
 
-func GetTunnelConnection(connectionId string) (net.Conn, bool) {
-	conn, ok := tunnelConnections.Load(connectionId)
+func (t *TunnelManager) GetTunnelConnection(connectionId string) (net.Conn, bool) {
+	conn, ok := t.TunnelConnections[connectionId]
 	if ok {
 		return conn.(net.Conn), ok
 	}
 	return nil, false
 }
 
-func ListAllConnectionsAsString() string {
+func (t *TunnelManager) ListAllConnectionsAsString() string {
 	var s = strings.Builder{}
-	tunnelConnections.Range(func(key, value any) bool {
-		s.WriteString(key.(string))
+	for key, _ := range t.TunnelConnections {
+		s.WriteString(key)
 		s.WriteString("\n")
-		return true
-	})
+	}
 	return s.String()
 }
 
-func SaveTunnelConnection(tunnelId string, conn net.Conn) {
+func (t *TunnelManager) SaveTunnelConnection(tunnelId string, conn net.Conn) {
 	log.Println("Saving Tunnel Connection for host=", tunnelId)
-	tunnelConnections.Store(tunnelId, conn)
+	t.TunnelConnections[tunnelId] = conn
 }

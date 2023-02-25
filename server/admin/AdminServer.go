@@ -7,11 +7,17 @@ import (
 	"net/http"
 )
 
-func StartAdminServer(port int, manager control_manager.Server) {
+type Server struct {
+	TunnelManger   tunnel_manager.TunnelManager
+	ControlManager control_manager.ControlManager
+	Port           int
+}
 
-	http.HandleFunc("/tunnels", listTunnels)
+func (s *Server) Start() {
+
+	http.HandleFunc("/tunnels", s.listTunnels)
 	http.HandleFunc("/control", func(writer http.ResponseWriter, request *http.Request) {
-		_, err := writer.Write([]byte(manager.ListAllConnectionsAsString()))
+		_, err := writer.Write([]byte(s.ControlManager.ListAllConnectionsAsString()))
 		if err != nil {
 			log.Println("Failed to list tunnels", err)
 		}
@@ -19,14 +25,14 @@ func StartAdminServer(port int, manager control_manager.Server) {
 
 	err := http.ListenAndServe(":8090", nil)
 	if err != nil {
-		log.Printf("Could not start admin server on port=%s  error=%s\n", port, err)
+		log.Printf("Could not start admin server on port=%s  error=%s\n", 8090, err)
 		panic(err)
 	}
-	log.Println("Started Admin Server on ", 8090)
+	log.Println("Started Admin ControlManager on ", 8090)
 }
 
-func listTunnels(writer http.ResponseWriter, request *http.Request) {
-	_, err := writer.Write([]byte(tunnel_manager.ListAllConnectionsAsString()))
+func (s *Server) listTunnels(writer http.ResponseWriter, request *http.Request) {
+	_, err := writer.Write([]byte(s.TunnelManger.ListAllConnectionsAsString()))
 	if err != nil {
 		log.Println("Failed to list tunnels", err)
 	}

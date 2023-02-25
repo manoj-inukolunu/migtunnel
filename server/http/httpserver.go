@@ -16,7 +16,8 @@ type Server struct {
 	// This is the communication channel between tunnel server and the http server
 	TunnelChannel  chan string
 	Port           int
-	ControlManager control.Server
+	ControlManager control.ControlManager
+	TunnelManager  tunnel_manager.TunnelManager
 }
 
 func (s *Server) Start() {
@@ -43,25 +44,28 @@ func (s *Server) handleIncomingHttpRequest(conn net.Conn) {
 	//wait until tunnelConnections has id
 	select {
 	case <-s.TunnelChannel:
-		if clientConn, ok := tunnel_manager.GetTunnelConnection(id); ok {
+		if clientConn, ok := s.TunnelManager.GetTunnelConnection(id); ok {
 			log.Println("Found Connection for tunnelId=", id)
 			// new connection created between client and server
 			// copy data between source connection and client connection in a new go routine
+			sig := make(chan bool)
 			go func() {
 				_, err := io.Copy(clientConn, vhostConn)
 				if err != nil {
 					log.Println("Failed to copy data from http to client ", err.Error())
 				}
+				sig <- true
 			}()
 			// copy data between client connection and source connections
 			_, err := io.Copy(vhostConn, clientConn)
+			<-sig
 			if err != nil {
 				log.Println("Failed ", err.Error())
-				tunnel_manager.RemoveTunnelConnection(id)
+				s.TunnelManager.RemoveTunnelConnection(id)
 				return
 			}
 			log.Println("Copy Done")
-			tunnel_manager.RemoveTunnelConnection(id)
+			s.TunnelManager.RemoveTunnelConnection(id)
 			// close client tunnel connection
 			clientConnError := clientConn.Close()
 			if clientConnError != nil {
@@ -77,7 +81,8 @@ func (s *Server) handleIncomingHttpRequest(conn net.Conn) {
 			if connError != nil {
 				log.Println("Failed to close Http Connection ", connError.Error())
 			}
-			break
+			return
 		}
+
 	}
 }

@@ -14,6 +14,7 @@ type Server struct {
 	HttpServerChan chan string
 	useTls         bool
 	TlsConfig      *tls.Config
+	TunnelManager  tunnelmanager.TunnelManager
 }
 
 func (s *Server) Start() {
@@ -63,9 +64,8 @@ func (s *Server) handleClientTunnelServerConnection(conn net.Conn) {
 	} else {
 		if message.MessageType == "init-request" {
 			log.Printf("Createing a new Tunnel %s\n", message)
-			tunnelmanager.SaveTunnelConnection(message.TunnelId, conn)
+			s.TunnelManager.SaveTunnelConnection(message.TunnelId, conn)
 			s.HttpServerChan <- "Done"
-			//go handleTunnelConnection(message, conn)
 		} else {
 			log.Println("Initial message from tunnel connection should be of type `init-request` found message ",
 				message)

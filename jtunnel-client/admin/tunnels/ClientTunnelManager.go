@@ -41,7 +41,7 @@ func GetControlConnection() (net.Conn, bool) {
 func RegisterTunnel(request data.TunnelData) error {
 	if conn, ok := GetControlConnection(); ok {
 		proto.SendMessage(proto.NewMessage(request.HostName, "Random", "register", []byte("asdf")), conn)
-		registeredTunnels.Store(request.HostName /*+".migtunnel.net"*/, request.LocalServerPort)
+		registeredTunnels.Store(request.HostName+".migtunnel.net", request.LocalServerPort)
 		return nil
 	}
 	return errors.New("Control Connection not found , will not be creating tunnel")

@@ -1,21 +1,56 @@
 package client
 
 import (
+	"crypto/tls"
+	"fmt"
+	"github.com/dgraph-io/badger/v3"
+	"github.com/google/uuid"
 	"golang/jtunnel-client/admin/tunnels"
+	"golang/jtunnel-client/util"
 	"golang/proto"
 	"io"
 	"log"
 	"net"
+	"net/http"
 	"strconv"
 	"sync"
 	"time"
 )
 
+var db *badger.DB
+
+func init() {
+	db, _ = badger.Open(badger.DefaultOptions("/Users/minukolunu/badgerT"))
+}
+
+func ListAll(writer http.ResponseWriter) error {
+	return db.View(func(txn *badger.Txn) error {
+
+		opts := badger.DefaultIteratorOptions
+		opts.PrefetchSize = 10
+		it := txn.NewIterator(opts)
+		defer it.Close()
+		for it.Rewind(); it.Valid(); it.Next() {
+			item := it.Item()
+			k := item.Key()
+			err := item.Value(func(v []byte) error {
+				_, err := writer.Write([]byte(fmt.Sprintf("key=%s, value=%s\n", k, v)))
+				if err != nil {
+					return err
+				}
+				return nil
+			})
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+
+	})
+}
+
 var controlConnections map[string]net.Conn
 var tunnelsMap map[string]net.Conn
-
-// uuid.New().String() + ".migtunnel.net"
-const remote = "localhost"
 
 func init() {
 	controlConnections = make(map[string]net.Conn)
@@ -24,11 +59,10 @@ func init() {
 
 func (client *Client) StartControlConnection() {
 	log.Println("Starting Control connection")
-	/*conf := &tls.Config{
+	conf := &tls.Config{
 		//InsecureSkipVerify: true,
 	}
-	conn, err := tls.Dial("tcp", remote+":9999", conf)*/
-	conn, err := net.Dial("tcp", remote+":9999")
+	conn, err := tls.Dial("tcp", uuid.New().String()+".migtunnel.net:9999", conf)
 	if err != nil {
 		log.Println("Failed to establish control connection ", "Error", err.Error())
 		panic(err)
@@ -57,19 +91,22 @@ func (client *Client) StartControlConnection() {
 				continue
 			}
 			log.Println("Created Local Connection", localConn.RemoteAddr())
-			go func() {
-				_, err := io.Copy(localConn, tunnel)
-				if err != nil {
-					closeConnections(localConn, tunnel)
-				}
-			}()
+			tunnelProcessor := util.NewTeeReader(db, message.TunnelId, tunnel, localConn)
 			log.Println("Writing data to local Connection")
-			_, err := io.Copy(tunnel, localConn)
+			sig := make(chan bool)
+			go func() {
+				err := tunnelProcessor.ReadFromTunnel()
+				if err != nil {
+					log.Println("Error reading from tunnel ", err.Error())
+				}
+				sig <- true
+			}()
+			err := tunnelProcessor.WriteToTunnel()
 			if err != nil {
-				closeConnections(localConn, tunnel)
+				log.Println("Error writing to tunnel ", err.Error())
 			}
-
 			log.Println("Finished Writing data to tunnel")
+			<-sig
 			closeConnections(localConn, tunnel)
 		}
 		if message.MessageType == "ack-tunnel-create" {
@@ -87,12 +124,12 @@ func closeConnections(localConn net.Conn, tunnel net.Conn) {
 			log.Println("Error while closing local connection ", err.Error())
 			return
 		}
-	}
-	if !checkClosed(tunnel) {
-		err := tunnel.Close()
-		if err != nil {
-			log.Println("Error while closing tunnel connection ", err.Error())
-			return
+		if !checkClosed(tunnel) {
+			err := tunnel.Close()
+			if err != nil {
+				log.Println("Error while closing tunnel connection ", err.Error())
+				return
+			}
 		}
 	}
 }
@@ -109,11 +146,10 @@ func checkClosed(conn net.Conn) bool {
 }
 
 func createNewTunnel(message *proto.Message) net.Conn {
-	/*conf := &tls.Config{
+	conf := &tls.Config{
 		//InsecureSkipVerify: true,
-	}*/
-	//conn, _ := tls.Dial("tcp", remote+":2121", conf)
-	conn, _ := net.Dial("tcp", remote+":2121")
+	}
+	conn, _ := tls.Dial("tcp", uuid.New().String()+".migtunnel.net:2121", conf)
 	mutex := sync.Mutex{}
 	mutex.Lock()
 	tunnelsMap[message.TunnelId] = conn
