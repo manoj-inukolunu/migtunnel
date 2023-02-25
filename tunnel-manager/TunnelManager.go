@@ -7,7 +7,8 @@ import (
 )
 
 type TunnelManager struct {
-	TunnelConnections map[string]net.Conn
+	TunnelConnections  map[string]net.Conn
+	HttpServerChannels map[string]chan bool
 }
 
 func (t *TunnelManager) RemoveTunnelConnection(tunnelId string) {

@@ -10,11 +10,10 @@ import (
 )
 
 type Server struct {
-	Port           int
-	HttpServerChan chan string
-	UseTls         bool
-	TlsConfig      *tls.Config
-	TunnelManager  tunnelmanager.TunnelManager
+	Port          int
+	UseTls        bool
+	TlsConfig     *tls.Config
+	TunnelManager tunnelmanager.TunnelManager
 }
 
 func (s *Server) Start() {
@@ -41,9 +40,9 @@ func (s *Server) startClientTunnelServer() {
 	s.workWithListener(httpListener)
 }
 
-func (s *Server) workWithListener(httpListener net.Listener) {
+func (s *Server) workWithListener(listener net.Listener) {
 	for {
-		conn, err := httpListener.Accept()
+		conn, err := listener.Accept()
 		if err != nil {
 			log.Println("Failed to accept tunnel connection ", conn, err.Error())
 		} else {
@@ -65,7 +64,9 @@ func (s *Server) handleClientTunnelServerConnection(conn net.Conn) {
 		if message.MessageType == "init-request" {
 			log.Printf("Createing a new Tunnel %s\n", message)
 			s.TunnelManager.SaveTunnelConnection(message.TunnelId, conn)
-			s.HttpServerChan <- "Done"
+			// notify the corresponding http server go routine that there we have the connection
+			s.TunnelManager.HttpServerChannels[message.TunnelId] <- true
+			return
 		} else {
 			log.Println("Initial message from tunnel connection should be of type `init-request` found message ",
 				message)

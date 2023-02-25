@@ -13,6 +13,7 @@ import (
 	"net"
 	"net/http"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 )
@@ -96,13 +97,13 @@ func (client *Client) StartControlConnection() {
 			sig := make(chan bool)
 			go func() {
 				err := tunnelProcessor.ReadFromTunnel()
-				if err != nil {
+				if err != nil && !strings.Contains(err.Error(), "use of closed") {
 					log.Println("Error reading from tunnel ", err.Error())
 				}
 				sig <- true
 			}()
 			err := tunnelProcessor.WriteToTunnel()
-			if err != nil {
+			if err != nil && !strings.Contains(err.Error(), "use of closed") {
 				log.Println("Error writing to tunnel ", err.Error())
 			}
 			log.Println("Finished Writing data to tunnel")
@@ -120,13 +121,13 @@ func (client *Client) StartControlConnection() {
 func closeConnections(localConn net.Conn, tunnel net.Conn) {
 	if !checkClosed(localConn) {
 		err := localConn.Close()
-		if err != nil {
+		if err != nil && !strings.Contains(err.Error(), "use of closed") {
 			log.Println("Error while closing local connection ", err.Error())
 			return
 		}
 		if !checkClosed(tunnel) {
 			err := tunnel.Close()
-			if err != nil {
+			if err != nil && !strings.Contains(err.Error(), "use of closed") {
 				log.Println("Error while closing tunnel connection ", err.Error())
 				return
 			}

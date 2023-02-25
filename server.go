@@ -38,24 +38,22 @@ func start(tunnelServerConfig TunnelServerConfig) {
 		ServerTlsConfig:    tunnelServerConfig.ServerTlsConfig,
 	}
 	tunnelManager := tunnelmanager.TunnelManager{
-		TunnelConnections: make(map[string]net.Conn),
+		TunnelConnections:  make(map[string]net.Conn),
+		HttpServerChannels: make(map[string]chan bool),
 	}
 	controlManager.InitCronitorHeartbeat()
 	controlManager.CheckConnections()
-	httpChan := make(chan string)
 	//Start all the servers
 	httpServer := myhttp.Server{
-		TunnelChannel:  httpChan,
 		Port:           tunnelServerConfig.ServerHttpServerPort,
 		ControlManager: controlManager,
 		TunnelManager:  tunnelManager,
 	}
 	tunnelServer := tunnel.Server{
-		Port:           tunnelServerConfig.ClientTunnelServerPort,
-		HttpServerChan: httpChan,
-		TlsConfig:      tunnelServerConfig.ServerTlsConfig,
-		TunnelManager:  tunnelManager,
-		UseTls:         useTLS,
+		Port:          tunnelServerConfig.ClientTunnelServerPort,
+		TlsConfig:     tunnelServerConfig.ServerTlsConfig,
+		TunnelManager: tunnelManager,
+		UseTls:        useTLS,
 	}
 	adminServer := admin.Server{
 		TunnelManger:   tunnelManager,

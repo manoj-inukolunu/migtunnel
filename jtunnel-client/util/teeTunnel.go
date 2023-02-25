@@ -3,7 +3,6 @@ package util
 import (
 	"github.com/dgraph-io/badger/v3"
 	"io"
-	"log"
 	"net"
 )
 
@@ -43,7 +42,7 @@ func (t *TeeReader) ReadFromTunnel() error {
 			if err != nil {
 				return err
 			}
-			t.requestData = append(t.requestData, buf[0:nr]...)
+			//t.requestData = append(t.requestData, buf[0:nr]...)
 		}
 	}
 }
@@ -57,7 +56,8 @@ func (t *TeeReader) WriteToTunnel() error {
 			if err == io.EOF {
 				t.tunnelConn.Close()
 				t.localConn.Close()
-				return t.save()
+				return nil
+				//return t.save()
 			}
 			return err
 		}
@@ -66,7 +66,7 @@ func (t *TeeReader) WriteToTunnel() error {
 			if err != nil {
 				return err
 			}
-			t.responseData = append(t.responseData, buf[0:nr]...)
+			//t.responseData = append(t.responseData, buf[0:nr]...)
 
 		}
 	}
@@ -78,7 +78,6 @@ func (t *TeeReader) save() error {
 		if err != nil {
 			return err
 		}
-		log.Println(t.responseData)
 		err = txn.Set([]byte(t.requestId+":"+"response"), t.responseData)
 		if err != nil {
 			return err

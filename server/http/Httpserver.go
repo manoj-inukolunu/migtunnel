@@ -13,8 +13,6 @@ import (
 )
 
 type Server struct {
-	// This is the communication channel between tunnel server and the http server
-	TunnelChannel  chan string
 	Port           int
 	ControlManager control.ControlManager
 	TunnelManager  tunnel_manager.TunnelManager
@@ -42,8 +40,11 @@ func (s *Server) handleIncomingHttpRequest(conn net.Conn) {
 	log.Println("Converted from conn to vhostConn ", vhostConn)
 	s.ControlManager.SendMessage(*proto.NewMessage(vhostConn.Host(), id, "init-request", []byte(id)))
 	//wait until tunnelConnections has id
+	sig := make(chan bool)
+	defer close(sig)
+	s.TunnelManager.HttpServerChannels[id] = sig
 	select {
-	case <-s.TunnelChannel:
+	case <-sig:
 		if clientConn, ok := s.TunnelManager.GetTunnelConnection(id); ok {
 			log.Println("Found Connection for tunnelId=", id)
 			// new connection created between client and server
@@ -62,7 +63,7 @@ func (s *Server) handleIncomingHttpRequest(conn net.Conn) {
 			if err != nil {
 				log.Println("Failed ", err.Error())
 				s.TunnelManager.RemoveTunnelConnection(id)
-				return
+				break
 			}
 			log.Println("Copy Done")
 			s.TunnelManager.RemoveTunnelConnection(id)
@@ -81,8 +82,10 @@ func (s *Server) handleIncomingHttpRequest(conn net.Conn) {
 			if connError != nil {
 				log.Println("Failed to close Http Connection ", connError.Error())
 			}
-			return
+			break
 		}
-
+		log.Println("Removing channel for tunnel id = ", id)
+		delete(s.TunnelManager.HttpServerChannels, id)
+		return
 	}
 }
