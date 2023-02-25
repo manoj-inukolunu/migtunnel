@@ -35,6 +35,7 @@ func start(tunnelServerConfig TunnelServerConfig) {
 		ControlConnections: make(map[string]net.Conn),
 		ControlServerPort:  tunnelServerConfig.ClientControlServerPort,
 		UseTLS:             useTLS,
+		ServerTlsConfig:    tunnelServerConfig.ServerTlsConfig,
 	}
 	tunnelManager := tunnelmanager.TunnelManager{
 		TunnelConnections: make(map[string]net.Conn),
@@ -54,6 +55,7 @@ func start(tunnelServerConfig TunnelServerConfig) {
 		HttpServerChan: httpChan,
 		TlsConfig:      tunnelServerConfig.ServerTlsConfig,
 		TunnelManager:  tunnelManager,
+		UseTls:         useTLS,
 	}
 	adminServer := admin.Server{
 		TunnelManger:   tunnelManager,

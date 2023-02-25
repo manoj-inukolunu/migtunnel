@@ -12,13 +12,13 @@ import (
 type Server struct {
 	Port           int
 	HttpServerChan chan string
-	useTls         bool
+	UseTls         bool
 	TlsConfig      *tls.Config
 	TunnelManager  tunnelmanager.TunnelManager
 }
 
 func (s *Server) Start() {
-	if s.useTls {
+	if s.UseTls {
 		go s.startTLSClientTunnelServer()
 	} else {
 		go s.startClientTunnelServer()
