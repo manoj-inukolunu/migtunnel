@@ -2,53 +2,19 @@ package client
 
 import (
 	"crypto/tls"
-	"fmt"
-	"github.com/dgraph-io/badger/v3"
 	"github.com/google/uuid"
-	"golang/jtunnel-client/admin/tunnels"
+	"golang/jtunnel-client/db"
+	"golang/jtunnel-client/tunnels"
 	"golang/jtunnel-client/util"
 	"golang/proto"
 	"io"
 	"log"
 	"net"
-	"net/http"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
 )
-
-var db *badger.DB
-
-func init() {
-	db, _ = badger.Open(badger.DefaultOptions("/Users/minukolunu/badgerT"))
-}
-
-func ListAll(writer http.ResponseWriter) error {
-	return db.View(func(txn *badger.Txn) error {
-
-		opts := badger.DefaultIteratorOptions
-		opts.PrefetchSize = 10
-		it := txn.NewIterator(opts)
-		defer it.Close()
-		for it.Rewind(); it.Valid(); it.Next() {
-			item := it.Item()
-			k := item.Key()
-			err := item.Value(func(v []byte) error {
-				_, err := writer.Write([]byte(fmt.Sprintf("key=%s, value=%s\n", k, v)))
-				if err != nil {
-					return err
-				}
-				return nil
-			})
-			if err != nil {
-				return err
-			}
-		}
-		return nil
-
-	})
-}
 
 var controlConnections map[string]net.Conn
 var tunnelsMap map[string]net.Conn
@@ -58,7 +24,7 @@ func init() {
 	tunnelsMap = make(map[string]net.Conn)
 }
 
-func (client *Client) StartControlConnection() {
+func (client *Client) StartControlConnection(localDb db.LocalDb) {
 	log.Println("Starting Control connection")
 	conf := &tls.Config{
 		//InsecureSkipVerify: true,
@@ -92,7 +58,7 @@ func (client *Client) StartControlConnection() {
 				continue
 			}
 			log.Println("Created Local Connection", localConn.RemoteAddr())
-			tunnelProcessor := util.NewTeeReader(db, message.TunnelId, tunnel, localConn)
+			tunnelProcessor := util.NewTeeReader(message.TunnelId, tunnel, localConn, localDb)
 			log.Println("Writing data to local Connection")
 			sig := make(chan bool)
 			go func() {

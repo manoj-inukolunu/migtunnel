@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/google/uuid"
 	"github.com/spf13/cobra"
-	"golang/jtunnel-client/admin/data"
+	"golang/jtunnel-client/data"
 	"golang/jtunnel-client/util"
 )
 
@@ -22,7 +22,7 @@ var registerCmd = &cobra.Command{
 			cmd.Println(cmd.UsageString())
 			return
 		}
-		tunnelRegisterRequest := data.TunnelData{
+		tunnelRegisterRequest := data.TunnelCreateRequest{
 			HostName:        hostName,
 			TunnelName:      uuid.NewString(),
 			LocalServerPort: localServerPort,

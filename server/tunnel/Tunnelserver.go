@@ -3,7 +3,7 @@ package tunnel
 import (
 	"crypto/tls"
 	"golang/proto"
-	tunnelmanager "golang/tunnel-manager"
+	tunnelmanager "golang/server/tunnel-manager"
 	"log"
 	"net"
 	"strconv"

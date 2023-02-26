@@ -5,10 +5,13 @@ import (
 	markdown "github.com/MichaelMure/go-term-markdown"
 	"github.com/spf13/cobra"
 	"github.com/thejerf/suture/v4"
-	"golang/jtunnel-client/admin/client"
-	"golang/jtunnel-client/admin/data"
+	"golang/jtunnel-client/client"
+	"golang/jtunnel-client/data"
+	"golang/jtunnel-client/db"
 	"log"
 )
+
+var dbFilePath string
 
 var startCmd = &cobra.Command{
 	Use:   "start",
@@ -34,10 +37,11 @@ type Main struct {
 func (main *Main) Serve(ctx context.Context) error {
 	result := markdown.Render(usage, 80, 6)
 	log.Println(string(result))
-	c := client.Client{ClientConfig: data.ClientConfig{AdminPort: 1234}}
+	localDb := db.NewLocalDb(dbFilePath)
+	c := client.NewClient(data.ClientConfig{AdminPort: 1234}, localDb)
 	main.cmd.Printf("Starting Admin Server on %d \n", 1234)
 	go c.StartAdminServer()
-	c.StartControlConnection()
+	c.StartControlConnection(localDb)
 	return nil
 }
 
@@ -47,4 +51,7 @@ func (main *Main) Stop() {
 
 func init() {
 	rootCmd.AddCommand(startCmd)
+	startCmd.Flags().StringVar(&dbFilePath,
+		"file", "", "Optional Full File path where db is stored."+
+			"If given migtunnel will save requests and responses in sqlite db located at `file`")
 }

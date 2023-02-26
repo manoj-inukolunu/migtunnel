@@ -2,7 +2,7 @@ package tunnels
 
 import (
 	"errors"
-	"golang/jtunnel-client/admin/data"
+	"golang/jtunnel-client/data"
 	"golang/proto"
 	"log"
 	"net"
@@ -38,7 +38,7 @@ func GetControlConnection() (net.Conn, bool) {
 	return nil, false
 }
 
-func RegisterTunnel(request data.TunnelData) error {
+func RegisterTunnel(request data.TunnelCreateRequest) error {
 	if conn, ok := GetControlConnection(); ok {
 		proto.SendMessage(proto.NewMessage(request.HostName, "Random", "register", []byte("asdf")), conn)
 		registeredTunnels.Store(request.HostName+".migtunnel.net", request.LocalServerPort)
@@ -53,6 +53,6 @@ func GetPortForHostName(hostName string) int16 {
 }
 
 func UpdateHostNameToPortMap(hostName string, localServerPort int) {
-	log.Printf("Request from %s are now being routed to %d\n", hostName, localServerPort)
+	log.Printf("TunnelData from %s are now being routed to %d\n", hostName, localServerPort)
 	registeredTunnels.Store(hostName, localServerPort)
 }

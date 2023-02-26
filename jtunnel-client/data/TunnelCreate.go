@@ -1,6 +1,6 @@
 package data
 
-type TunnelData struct {
+type TunnelCreateRequest struct {
 	HostName        string
 	TunnelName      string
 	LocalServerPort int16

@@ -2,7 +2,7 @@ package admin
 
 import (
 	control_manager "golang/server/control"
-	tunnel_manager "golang/tunnel-manager"
+	"golang/server/tunnel-manager"
 	"log"
 	"net/http"
 )
