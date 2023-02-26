@@ -5,10 +5,10 @@ import (
 	"compress/gzip"
 	"database/sql"
 	_ "embed"
-	_ "github.com/mattn/go-sqlite3"
 	"golang/jtunnel-client/data"
 	"io"
 	"log"
+	_ "modernc.org/sqlite"
 )
 
 //go:embed tables.sql
@@ -22,10 +22,10 @@ type LocalDb struct {
 func NewLocalDb(file string) LocalDb {
 	var d *sql.DB
 	if file == "" {
-		d, _ = sql.Open("sqlite3", ":memory:")
+		d, _ = sql.Open("sqlite", ":memory:")
 	} else {
 		log.Println("Saving all requests to file ", file)
-		d, _ = sql.Open("sqlite3", file)
+		d, _ = sql.Open("sqlite", file)
 	}
 
 	d.Exec("BEGIN TRANSACTION")
