@@ -21,7 +21,7 @@ var listCmd = &cobra.Command{
 		allTunnels, err := util.GetTunnels(adminUrl)
 		if err != nil {
 			cmd.Println("Unable to list tunnels , please check if jtunnel is up and "+
-				"admin server is running on port ", adminPort)
+				"ui server is running on port ", adminPort)
 		}
 		cmd.Println(allTunnels)
 	},

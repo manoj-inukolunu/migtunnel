@@ -16,9 +16,12 @@ type TeeReader struct {
 	localConn    net.Conn
 	timeStamp    int64
 	Db           db.LocalDb
+	isReplay     bool
+	localPort    int16
 }
 
-func NewTeeReader(requestId string, tunnelConn net.Conn, localConn net.Conn, db db.LocalDb) TeeReader {
+func NewTeeReader(requestId string, tunnelConn net.Conn, localConn net.Conn, db db.LocalDb, isReplay bool, localPort int16) TeeReader {
+
 	return TeeReader{
 		responseData: []byte{},
 		requestData:  []byte{},
@@ -27,10 +30,12 @@ func NewTeeReader(requestId string, tunnelConn net.Conn, localConn net.Conn, db 
 		localConn:    localConn,
 		timeStamp:    time.Now().UnixNano(),
 		Db:           db,
+		isReplay:     isReplay,
+		localPort:    localPort,
 	}
 }
 
-func (t *TeeReader) ReadFromTunnel() error {
+func (t *TeeReader) TunnelToLocal() error {
 	oneKB := 32 * 1024
 	buf := make([]byte, oneKB)
 	for {
@@ -51,7 +56,7 @@ func (t *TeeReader) ReadFromTunnel() error {
 	}
 }
 
-func (t *TeeReader) WriteToTunnel() error {
+func (t *TeeReader) LocalToTunnel() error {
 	oneKB := 32 * 1024
 	buf := make([]byte, oneKB)
 	for {
@@ -79,8 +84,9 @@ func (t *TeeReader) save() error {
 	return t.Db.Save(data.TunnelData{
 		Id:           t.timeStamp,
 		TunnelId:     t.requestId,
-		IsReplay:     false,
+		IsReplay:     t.isReplay,
 		RequestData:  t.requestData,
 		ResponseData: t.responseData,
+		LocalPort:    t.localPort,
 	})
 }

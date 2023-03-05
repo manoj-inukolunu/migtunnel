@@ -1,10 +1,13 @@
 package client
 
 import (
+	"bytes"
 	"encoding/json"
+	"github.com/google/uuid"
 	data2 "golang/jtunnel-client/data"
 	"golang/jtunnel-client/db"
 	"golang/jtunnel-client/tunnels"
+	"golang/jtunnel-client/util"
 	"log"
 	"net/http"
 	"strconv"
@@ -35,6 +38,36 @@ func (client *Client) GetClientConfig() data2.ClientConfig {
 	return client.ClientConfig
 }
 
+func (c *Client) replay(writer http.ResponseWriter, request *http.Request) {
+	splits := strings.Split(request.URL.Path, "/")
+	requestId, _ := strconv.ParseInt(splits[2], 10, 64)
+	data, _ := c.Db.Get(requestId)
+	localConn, _ := createLocalConnection(data.LocalPort)
+	log.Println("Writing data to local Connection")
+	tunnelProcessor := util.NewTeeReader(uuid.New().String(), &util.FakeConn{Reader: *bytes.NewReader(data.RequestData)}, localConn, c.Db, true, 0)
+	sig := make(chan bool)
+	go func() {
+		err := tunnelProcessor.TunnelToLocal()
+		if err != nil && !strings.Contains(err.Error(), "use of closed") {
+			log.Println("Error reading from tunnel ", err.Error())
+		}
+		sig <- true
+	}()
+	err := tunnelProcessor.LocalToTunnel()
+	if err != nil && !strings.Contains(err.Error(), "use of closed") {
+		log.Println("Error writing to tunnel ", err.Error())
+	}
+	log.Println("Finished Writing data to tunnel")
+	<-sig
+	if !checkClosed(localConn) {
+		err := localConn.Close()
+		if err != nil && !strings.Contains(err.Error(), "use of closed") {
+			log.Println("Error while closing local connection ", err.Error())
+			return
+		}
+	}
+}
+
 func (client *Client) StartAdminServer() {
 	http.HandleFunc("/list", listHandler)
 	http.HandleFunc("/register", registerTunnelHandler)
@@ -49,6 +82,7 @@ func (client *Client) StartAdminServer() {
 		writer.Header().Set("Content-Type", "application/json")
 		writer.Write(bytes)
 	})
+	http.HandleFunc("/replay/", client.replay)
 	http.HandleFunc("/request/", func(writer http.ResponseWriter, request *http.Request) {
 		splits := strings.Split(request.URL.Path, "/")
 		requestId, _ := strconv.ParseInt(splits[2], 10, 64)
@@ -63,14 +97,18 @@ func (client *Client) StartAdminServer() {
 		}
 
 	})
+	fs := http.FileServer(http.Dir("./jtunnel-client/client/ui/"))
+	http.Handle("/", http.StripPrefix("/ui", fs))
 	err := http.ListenAndServe(":"+strconv.Itoa(int(client.ClientConfig.AdminPort)), nil)
 	if err != nil {
-		log.Printf("Could not start admin server on port=%s  error=%s\n", client.ClientConfig.AdminPort, err)
+		log.Printf("Could not start ui server on port=%s  error=%s\n", client.ClientConfig.AdminPort, err)
 		panic(err)
 	}
 }
 
 func registerTunnelHandler(writer http.ResponseWriter, request *http.Request) {
+	//str, _ := io.ReadAll(request.Body)
+	//fmt.Println(string(str))
 	dec := json.NewDecoder(request.Body)
 	message := &data2.TunnelCreateRequest{}
 	err := dec.Decode(message)

@@ -58,17 +58,18 @@ func (client *Client) StartControlConnection(localDb db.LocalDb) {
 				continue
 			}
 			log.Println("Created Local Connection", localConn.RemoteAddr())
-			tunnelProcessor := util.NewTeeReader(message.TunnelId, tunnel, localConn, localDb)
+			tunnelProcessor := util.NewTeeReader(message.TunnelId, tunnel, localConn, localDb, false,
+				tunnels.GetPortForHostName(message.HostName))
 			log.Println("Writing data to local Connection")
 			sig := make(chan bool)
 			go func() {
-				err := tunnelProcessor.ReadFromTunnel()
+				err := tunnelProcessor.TunnelToLocal()
 				if err != nil && !strings.Contains(err.Error(), "use of closed") {
 					log.Println("Error reading from tunnel ", err.Error())
 				}
 				sig <- true
 			}()
-			err := tunnelProcessor.WriteToTunnel()
+			err := tunnelProcessor.LocalToTunnel()
 			if err != nil && !strings.Contains(err.Error(), "use of closed") {
 				log.Println("Error writing to tunnel ", err.Error())
 			}
@@ -91,12 +92,12 @@ func closeConnections(localConn net.Conn, tunnel net.Conn) {
 			log.Println("Error while closing local connection ", err.Error())
 			return
 		}
-		if !checkClosed(tunnel) {
-			err := tunnel.Close()
-			if err != nil && !strings.Contains(err.Error(), "use of closed") {
-				log.Println("Error while closing tunnel connection ", err.Error())
-				return
-			}
+	}
+	if !checkClosed(tunnel) {
+		err := tunnel.Close()
+		if err != nil && !strings.Contains(err.Error(), "use of closed") {
+			log.Println("Error while closing tunnel connection ", err.Error())
+			return
 		}
 	}
 }

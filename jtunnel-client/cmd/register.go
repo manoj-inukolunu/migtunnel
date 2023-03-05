@@ -46,6 +46,6 @@ func init() {
 		"host", "", "Host name for the tunnel ")
 	registerCmd.Flags().Int16Var(&localServerPort,
 		"port", 0, "Port on which the local server is running")
-	registerCmd.Flags().Int16Var(&adminServerPort, "adminPort", 0, "Port on which the admin server is running")
+	registerCmd.Flags().Int16Var(&adminServerPort, "adminPort", 0, "Port on which the ui server is running")
 
 }

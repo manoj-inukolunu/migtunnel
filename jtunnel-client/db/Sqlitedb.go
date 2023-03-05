@@ -42,13 +42,14 @@ func NewLocalDb(file string) LocalDb {
 }
 
 func (d *LocalDb) Get(id int64) (data.TunnelData, error) {
-	row := d.db.QueryRow("select ID,TUNNEL_ID,REQUEST_DATA,RESPONSE_DATA from ALL_REQUESTS where id=?", id)
+	row := d.db.QueryRow("select ID,TUNNEL_ID,REQUEST_DATA,RESPONSE_DATA,LOCAL_PORT from ALL_REQUESTS where id=?", id)
 	var tunnelData data.TunnelData
 	err := row.Scan(
 		&tunnelData.Id,
 		&tunnelData.TunnelId,
 		&tunnelData.RequestData,
 		&tunnelData.ResponseData,
+		&tunnelData.LocalPort,
 	)
 	tunnelData.RequestData = uncompress(tunnelData.RequestData)
 	tunnelData.ResponseData = uncompress(tunnelData.ResponseData)
@@ -104,7 +105,8 @@ func (d *LocalDb) Save(t data.TunnelData) error {
 	if err != nil {
 		log.Println("Could not compress response Data", err.Error())
 	}
-	_, err = d.db.Exec("INSERT INTO ALL_REQUESTS VALUES (?,?,?,?,?,?) ", t.Id, t.TunnelId, t.IsReplay, reqData, respData, "")
+	_, err = d.db.Exec("INSERT INTO ALL_REQUESTS VALUES (?,?,?,?,?,?,?) ",
+		t.Id, t.TunnelId, t.IsReplay, reqData, respData, t.LocalPort, "")
 	if err != nil {
 		log.Println("Cloud not save tunnelData into database ", err.Error())
 		return err
