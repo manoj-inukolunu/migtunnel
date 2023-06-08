@@ -42,7 +42,10 @@ func (c *Client) replay(writer http.ResponseWriter, request *http.Request) {
 	splits := strings.Split(request.URL.Path, "/")
 	requestId, _ := strconv.ParseInt(splits[2], 10, 64)
 	data, _ := c.Db.Get(requestId)
-	localConn, _ := createLocalConnection(data.LocalPort)
+	localConn, err := createLocalConnection(data.LocalPort)
+	if err != nil {
+		log.Println("Failed to create local connection", err)
+	}
 	log.Println("Writing data to local Connection")
 	tunnelProcessor := util.NewTeeReader(uuid.New().String(), &util.FakeConn{Reader: *bytes.NewReader(data.RequestData)}, localConn, c.Db, true, 0)
 	sig := make(chan bool)
@@ -53,7 +56,7 @@ func (c *Client) replay(writer http.ResponseWriter, request *http.Request) {
 		}
 		sig <- true
 	}()
-	err := tunnelProcessor.LocalToTunnel()
+	err = tunnelProcessor.LocalToTunnel()
 	if err != nil && !strings.Contains(err.Error(), "use of closed") {
 		log.Println("Error writing to tunnel ", err.Error())
 	}

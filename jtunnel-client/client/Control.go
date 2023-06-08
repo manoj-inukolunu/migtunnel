@@ -27,7 +27,7 @@ func init() {
 func (client *Client) StartControlConnection(localDb db.LocalDb) {
 	log.Println("Starting Control connection")
 	conf := &tls.Config{
-		//InsecureSkipVerify: true,
+		InsecureSkipVerify: true,
 	}
 	conn, err := tls.Dial("tcp", uuid.New().String()+".migtunnel.net:9999", conf)
 	if err != nil {
@@ -115,7 +115,7 @@ func checkClosed(conn net.Conn) bool {
 
 func createNewTunnel(message *proto.Message) net.Conn {
 	conf := &tls.Config{
-		//InsecureSkipVerify: true,
+		InsecureSkipVerify: true,
 	}
 	conn, _ := tls.Dial("tcp", uuid.New().String()+".migtunnel.net:2121", conf)
 	mutex := sync.Mutex{}
