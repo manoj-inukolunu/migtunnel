@@ -12,6 +12,7 @@ import (
 )
 
 var dbFilePath string
+var isLocal bool
 
 var startCmd = &cobra.Command{
 	Use:   "start",
@@ -28,7 +29,7 @@ var startCmd = &cobra.Command{
 	},
 }
 
-const usage = "Welcome to JTunnel .\n\nSource code is at `https://github.com/manoj-inukolunu/jtunnel-go`\n\nTo create a new tunnel\n\nMake a `POST` request to `client://127.0.0.1:1234/create`\nwith the payload\n\n```\n{\n    \"HostName\":\"myhost\",\n    \"TunnelName\":\"Tunnel Name\",\n    \"localServerPort\":\"3131\"\n}\n\n```\n\nThe endpoint you get is `https://myhost.migtunnel.net`\n\nAll the requests to `https://myhost.migtunnel.net` will now\n\nbe routed to your server running on port `3131`\n\n"
+const usage = "Welcome to JTunnel .\n\nSource code is at `https://github.com/manoj-inukolunu/jtunnel-go`\n\nTo create a new tunnel\n\nMake a `POST` request to `client://127.0.0.1:1234/create`\nwith the payload\n\n```\n{\n    \"HostName\":\"myhost\",\n    \"TunnelName\":\"TunnelPort Name\",\n    \"localServerPort\":\"3131\"\n}\n\n```\n\nThe endpoint you get is `https://myhost.migtunnel.net`\n\nAll the requests to `https://myhost.migtunnel.net` will now\n\nbe routed to your server running on port `3131`\n\n"
 
 type Main struct {
 	cmd *cobra.Command
@@ -41,7 +42,7 @@ func (main *Main) Serve(ctx context.Context) error {
 	c := client.NewClient(data.ClientConfig{AdminPort: 1234}, localDb)
 	main.cmd.Printf("Starting Admin Server on %d \n", 1234)
 	go c.StartAdminServer()
-	c.StartControlConnection(localDb)
+	c.StartControlConnection(localDb, isLocal)
 	return nil
 }
 
@@ -54,4 +55,5 @@ func init() {
 	startCmd.Flags().StringVar(&dbFilePath,
 		"file", "", "Optional Full File path where db is stored."+
 			"If given migtunnel will save requests and responses in sqlite db located at `file`")
+	startCmd.Flags().BoolVar(&isLocal, "local", false, "Optional Connect to server running in localhost useful for debugging")
 }

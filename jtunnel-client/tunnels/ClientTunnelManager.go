@@ -15,14 +15,14 @@ var registeredTunnels = sync.Map{}
 
 const controlConnectionKey = "Main"
 
-func GetRegisteredTunnels() sync.Map {
-	return registeredTunnels
+type LocalServer struct {
+	ServerFqdn string
+	Port       int16
+	Tls        bool
 }
 
-func CheckStatusOfLocalServers() {
-	registeredTunnels.Range(func(key, value any) bool {
-		return true
-	})
+func GetRegisteredTunnels() sync.Map {
+	return registeredTunnels
 }
 
 func SaveControlConnection(conn net.Conn) {
@@ -41,15 +41,19 @@ func GetControlConnection() (net.Conn, bool) {
 func RegisterTunnel(request data.TunnelCreateRequest) error {
 	if conn, ok := GetControlConnection(); ok {
 		proto.SendMessage(proto.NewMessage(request.HostName, "Random", "register", []byte("asdf")), conn)
-		registeredTunnels.Store(request.HostName+".migtunnel.net", request.LocalServerPort)
+		registeredTunnels.Store(request.HostName+".migtunnel.net", LocalServer{
+			ServerFqdn: request.TlsServerFQDN,
+			Port:       request.LocalServerPort,
+			Tls:        request.Tls,
+		})
 		return nil
 	}
 	return errors.New("Control Connection not found , will not be creating tunnel")
 }
 
-func GetPortForHostName(hostName string) int16 {
+func GetLocalServer(hostName string) LocalServer {
 	port, _ := registeredTunnels.Load(hostName)
-	return port.(int16)
+	return port.(LocalServer)
 }
 
 func UpdateHostNameToPortMap(hostName string, localServerPort int) {

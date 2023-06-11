@@ -2,7 +2,6 @@ package client
 
 import (
 	"crypto/tls"
-	"github.com/google/uuid"
 	"golang/jtunnel-client/db"
 	"golang/jtunnel-client/tunnels"
 	"golang/jtunnel-client/util"
@@ -19,17 +18,19 @@ import (
 var controlConnections map[string]net.Conn
 var tunnelsMap map[string]net.Conn
 
+const (
+	TunnelPort  = 2121
+	ControlPort = 9999
+)
+
 func init() {
 	controlConnections = make(map[string]net.Conn)
 	tunnelsMap = make(map[string]net.Conn)
 }
 
-func (client *Client) StartControlConnection(localDb db.LocalDb) {
+func (client *Client) StartControlConnection(localDb db.LocalDb, isLocal bool) {
 	log.Println("Starting Control connection")
-	conf := &tls.Config{
-		InsecureSkipVerify: true,
-	}
-	conn, err := tls.Dial("tcp", uuid.New().String()+".migtunnel.net:9999", conf)
+	conn, err := getControlConnection(isLocal)
 	if err != nil {
 		log.Println("Failed to establish control connection ", "Error", err.Error())
 		panic(err)
@@ -49,20 +50,20 @@ func (client *Client) StartControlConnection(localDb db.LocalDb) {
 			log.Println("Error on control connection ", "Error", err.Error())
 		}
 		if message.MessageType == "init-request" {
-			tunnel := createNewTunnel(message)
-			log.Println("Created a new Tunnel")
-			localConn, localConnErr := createLocalConnection(tunnels.GetPortForHostName(message.HostName))
+			tunnel := createNewTunnel(message, isLocal)
+			log.Println("Created a new TunnelPort")
+			localConn, localConnErr := createLocalConnection(tunnels.GetLocalServer(message.HostName))
 			if localConnErr != nil {
 				log.Printf("Could not connect to local server on port %d "+
-					"Please check if server is running.\n", tunnels.GetPortForHostName(message.HostName))
+					"Please check if server is running.\n", tunnels.GetLocalServer(message.HostName).Port)
 				continue
 			}
 			log.Println("Created Local Connection", localConn.RemoteAddr())
 			tunnelProcessor := util.NewTeeReader(message.TunnelId, tunnel, localConn, localDb, false,
-				tunnels.GetPortForHostName(message.HostName))
-			log.Println("Writing data to local Connection")
+				tunnels.GetLocalServer(message.HostName))
 			sig := make(chan bool)
 			go func() {
+				log.Println("Reading data form tunnel")
 				err := tunnelProcessor.TunnelToLocal()
 				if err != nil && !strings.Contains(err.Error(), "use of closed") {
 					log.Println("Error reading from tunnel ", err.Error())
@@ -82,6 +83,19 @@ func (client *Client) StartControlConnection(localDb db.LocalDb) {
 			port, _ := strconv.Atoi(string(message.Data))
 			tunnels.UpdateHostNameToPortMap(message.HostName, port)
 		}
+	}
+}
+
+func getControlConnection(isLocal bool) (net.Conn, error) {
+	if isLocal {
+		conn, err := net.Dial("tcp", util.GetRemoteUrl(isLocal, ControlPort))
+		return conn, err
+	} else {
+		conf := &tls.Config{
+			InsecureSkipVerify: true,
+		}
+		conn, err := tls.Dial("tcp", util.GetRemoteUrl(isLocal, ControlPort), conf)
+		return conn, err
 	}
 }
 
@@ -113,11 +127,8 @@ func checkClosed(conn net.Conn) bool {
 	return false
 }
 
-func createNewTunnel(message *proto.Message) net.Conn {
-	conf := &tls.Config{
-		InsecureSkipVerify: true,
-	}
-	conn, _ := tls.Dial("tcp", uuid.New().String()+".migtunnel.net:2121", conf)
+func createNewTunnel(message *proto.Message, isLocal bool) net.Conn {
+	conn := createTunnelConnection(isLocal)
 	mutex := sync.Mutex{}
 	mutex.Lock()
 	tunnelsMap[message.TunnelId] = conn
@@ -126,7 +137,28 @@ func createNewTunnel(message *proto.Message) net.Conn {
 	return conn
 }
 
-func createLocalConnection(port int16) (net.Conn, error) {
-	conn, err := net.Dial("tcp", "localhost:"+strconv.Itoa(int(port)))
-	return conn, err
+func createTunnelConnection(isLocal bool) net.Conn {
+	if isLocal {
+		conn, _ := net.Dial("tcp", util.GetRemoteUrl(isLocal, TunnelPort))
+		return conn
+	}
+	conf := &tls.Config{
+		InsecureSkipVerify: true,
+	}
+	conn, _ := tls.Dial("tcp", util.GetRemoteUrl(isLocal, TunnelPort), conf)
+	return conn
+}
+
+func createLocalConnection(server tunnels.LocalServer) (net.Conn, error) {
+	if server.Tls {
+		conf := &tls.Config{
+			InsecureSkipVerify: true,
+		}
+		conn, err := tls.Dial("tcp", server.ServerFqdn+":"+strconv.Itoa(int(server.Port)), conf)
+		return conn, err
+	} else {
+		conn, err := net.Dial("tcp", "localhost:"+strconv.Itoa(int(server.Port)))
+		return conn, err
+	}
+
 }

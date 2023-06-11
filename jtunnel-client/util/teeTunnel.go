@@ -3,7 +3,9 @@ package util
 import (
 	"golang/jtunnel-client/data"
 	"golang/jtunnel-client/db"
+	"golang/jtunnel-client/tunnels"
 	"io"
+	"log"
 	"net"
 	"time"
 )
@@ -20,7 +22,7 @@ type TeeReader struct {
 	localPort    int16
 }
 
-func NewTeeReader(requestId string, tunnelConn net.Conn, localConn net.Conn, db db.LocalDb, isReplay bool, localPort int16) TeeReader {
+func NewTeeReader(requestId string, tunnelConn net.Conn, localConn net.Conn, db db.LocalDb, isReplay bool, localServer tunnels.LocalServer) TeeReader {
 
 	return TeeReader{
 		responseData: []byte{},
@@ -31,7 +33,7 @@ func NewTeeReader(requestId string, tunnelConn net.Conn, localConn net.Conn, db 
 		timeStamp:    time.Now().UnixNano(),
 		Db:           db,
 		isReplay:     isReplay,
-		localPort:    localPort,
+		localPort:    localServer.Port,
 	}
 }
 
@@ -62,8 +64,12 @@ func (t *TeeReader) LocalToTunnel() error {
 	for {
 		nr, err := t.localConn.Read(buf)
 		if err != nil {
+			log.Println("Finished reading from local connection")
 			if err == io.EOF {
-				t.tunnelConn.Close()
+				closeErr := t.tunnelConn.Close()
+				if closeErr != nil {
+					log.Println("Failed to close tunnel connection", err.Error())
+				}
 				t.localConn.Close()
 				return t.save()
 			}

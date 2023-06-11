@@ -3,8 +3,10 @@ package util
 import (
 	"bytes"
 	"encoding/json"
+	"github.com/google/uuid"
 	"golang/jtunnel-client/data"
 	"net/http"
+	"strconv"
 )
 
 func GetTunnels(adminUrl string) ([]data.TunnelCreateRequest, error) {
@@ -27,4 +29,12 @@ func RegisterTunnel(adminUrl string, tunnelRegisterRequest data.TunnelCreateRequ
 		return err
 	}
 	return nil
+}
+
+func GetRemoteUrl(isLocal bool, port int16) string {
+	if isLocal {
+		return "localhost:" + strconv.Itoa(int(port))
+	} else {
+		return uuid.New().String() + ".migtunnel.net:" + strconv.Itoa(int(port))
+	}
 }
