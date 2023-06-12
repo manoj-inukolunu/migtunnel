@@ -70,7 +70,6 @@ func (s *Server) handleIncomingHttpRequest(conn net.Conn, id string) {
 				break
 			}
 			util.LogWithPrefix(id, "Copy Done")
-			s.TunnelManager.RemoveTunnelConnection(id)
 			// close client tunnel connection
 			clientConnError := clientConn.Close()
 			if clientConnError != nil {
@@ -79,7 +78,7 @@ func (s *Server) handleIncomingHttpRequest(conn net.Conn, id string) {
 			//close http connection
 			vHostConnError := vhostConn.Close()
 			if vHostConnError != nil {
-				util.LogWithPrefix(id, "Failed to close Http Connection "+vHostConnError.Error())
+				util.LogWithPrefix(id, "Failed to close vhost Http Connection "+vHostConnError.Error())
 			}
 			//close http connection
 			connError := conn.Close()
@@ -87,6 +86,7 @@ func (s *Server) handleIncomingHttpRequest(conn net.Conn, id string) {
 				util.LogWithPrefix(id, "Failed to close Http Connection "+connError.Error())
 			}
 			s.cleanUp(id)
+			s.TunnelManager.RemoveTunnelConnection(id)
 			return
 		}
 	}

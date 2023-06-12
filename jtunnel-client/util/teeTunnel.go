@@ -44,17 +44,22 @@ func (t *TeeReader) TunnelToLocal() error {
 		nr, err := t.tunnelConn.Read(buf)
 		if err != nil {
 			if err == io.EOF {
+				processTunnelToLocalData(t, buf, nr)
 				return nil
 			}
 			return err
 		}
-		if nr > 0 {
-			_, err := t.localConn.Write(buf[0:nr])
-			if err != nil {
-				return err
-			}
-			t.requestData = append(t.requestData, buf[0:nr]...)
+		processTunnelToLocalData(t, buf, nr)
+	}
+}
+
+func processTunnelToLocalData(t *TeeReader, buf []byte, numRead int) {
+	if numRead > 0 {
+		written, err := t.localConn.Write(buf[0:numRead])
+		if err != nil || written != numRead {
+			log.Println("Failed to write to local connection", err.Error())
 		}
+		t.requestData = append(t.requestData, buf[0:numRead]...)
 	}
 }
 
@@ -66,6 +71,7 @@ func (t *TeeReader) LocalToTunnel() error {
 		if err != nil {
 			log.Println("Finished reading from local connection")
 			if err == io.EOF {
+				processLocalToTunnelData(t, buf, nr)
 				closeErr := t.tunnelConn.Close()
 				if closeErr != nil {
 					log.Println("Failed to close tunnel connection", err.Error())
@@ -75,18 +81,22 @@ func (t *TeeReader) LocalToTunnel() error {
 			}
 			return err
 		}
-		if nr > 0 {
-			_, err := t.tunnelConn.Write(buf[0:nr])
-			if err != nil {
-				return err
-			}
-			t.responseData = append(t.responseData, buf[0:nr]...)
+		processLocalToTunnelData(t, buf, nr)
+	}
+}
 
+func processLocalToTunnelData(t *TeeReader, buf []byte, numRead int) {
+	if numRead > 0 {
+		numWrite, err := t.tunnelConn.Write(buf[0:numRead])
+		if err != nil || numWrite != numRead {
+			log.Println("Failed to write data to Tunnel ", err.Error())
 		}
+		t.responseData = append(t.responseData, buf[0:numRead]...)
 	}
 }
 
 func (t *TeeReader) save() error {
+	log.Println(string(t.responseData))
 	return t.Db.Save(data.TunnelData{
 		Id:           t.timeStamp,
 		TunnelId:     t.requestId,

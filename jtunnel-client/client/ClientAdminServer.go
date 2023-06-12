@@ -145,7 +145,7 @@ func listHandler(writer http.ResponseWriter, request *http.Request) {
 	var listOfTunnels []data2.TunnelCreateRequest
 	list.Range(func(key, value any) bool {
 		listOfTunnels = append(listOfTunnels, data2.TunnelCreateRequest{HostName: key.(string),
-			LocalServerPort: value.(int16)})
+			LocalServerPort: value.(tunnels.LocalServer).Port})
 		return true
 	})
 	str, _ := json.Marshal(listOfTunnels)

@@ -59,24 +59,27 @@ func (client *Client) StartControlConnection(localDb db.LocalDb, isLocal bool) {
 				continue
 			}
 			log.Println("Created Local Connection", localConn.RemoteAddr())
-			tunnelProcessor := util.NewTeeReader(message.TunnelId, tunnel, localConn, localDb, false,
-				tunnels.GetLocalServer(message.HostName))
+			/*tunnelProcessor := util.NewTeeReader(message.TunnelId, tunnel, localConn, localDb, false,
+			tunnels.GetLocalServer(message.HostName))*/
 			sig := make(chan bool)
 			go func() {
 				log.Println("Reading data form tunnel")
-				err := tunnelProcessor.TunnelToLocal()
+				//err := tunnelProcessor.TunnelToLocal()
+				_, err := io.Copy(localConn, tunnel)
 				if err != nil && !strings.Contains(err.Error(), "use of closed") {
 					log.Println("Error reading from tunnel ", err.Error())
 				}
 				sig <- true
 			}()
-			err := tunnelProcessor.LocalToTunnel()
+			//err := tunnelProcessor.LocalToTunnel()
+			_, err := io.Copy(tunnel, localConn)
 			if err != nil && !strings.Contains(err.Error(), "use of closed") {
 				log.Println("Error writing to tunnel ", err.Error())
 			}
 			log.Println("Finished Writing data to tunnel")
 			<-sig
-			closeConnections(localConn, tunnel)
+			close(sig)
+			//closeConnections(localConn, tunnel)
 		}
 		if message.MessageType == "ack-tunnel-create" {
 			log.Println("Received Ack for creating tunnel from the upstream server")
