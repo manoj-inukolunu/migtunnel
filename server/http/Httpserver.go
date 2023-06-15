@@ -21,7 +21,7 @@ type Server struct {
 
 func (s *Server) Start() {
 	httpListener, _ := net.Listen("tcp", "localhost:"+strconv.Itoa(s.Port))
-	log.Println("Starting client server")
+	log.Println("Starting Http Server on port=", s.Port)
 	for {
 		conn, err := httpListener.Accept()
 		id := uuid.New().String()
@@ -51,19 +51,19 @@ func (s *Server) handleIncomingHttpRequest(conn net.Conn, id string) {
 			util.LogWithPrefix(id, "Found Connection for tunnelId="+id)
 			// new connection created between client and server
 			// copy data between source connection and client connection in a new go routine
-			sigC := make(chan bool)
+			//sigC := make(chan bool)
 			go func() {
 				_, err := io.Copy(clientConn, vhostConn)
 				if err != nil {
 					util.LogWithPrefix(id, "Failed to copy data from http to client "+err.Error())
 				}
 				util.LogWithPrefix(id, "Finished copying from server to client")
-				sigC <- true
+				/*sigC <- true*/
 			}()
 			// copy data between client connection and source connections
 			_, err := io.Copy(vhostConn, clientConn)
 			util.LogWithPrefix(id, "Finished copying from client to server")
-			<-sigC
+			/*<-sigC*/
 			if err != nil {
 				util.LogWithPrefix(id, "Failed "+err.Error())
 				s.TunnelManager.RemoveTunnelConnection(id)

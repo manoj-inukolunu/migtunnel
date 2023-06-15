@@ -25,6 +25,7 @@ func (s *Server) Start() {
 }
 
 func (s *Server) startTLSClientTunnelServer() {
+	log.Println("Starting tls client tunnel server on port=", s.Port)
 	ln, err := tls.Listen("tcp", ":"+strconv.Itoa(s.Port), s.TlsConfig)
 	if err != nil {
 		log.Println(err)
@@ -35,7 +36,7 @@ func (s *Server) startTLSClientTunnelServer() {
 }
 
 func (s *Server) startClientTunnelServer() {
-	log.Println("Starting Client Tunnel Server on port", s.Port)
+	log.Println("Starting Non TLS Client Tunnel Server on port=", s.Port)
 	httpListener, _ := net.Listen("tcp", ":"+strconv.Itoa(s.Port))
 	s.workWithListener(httpListener)
 }

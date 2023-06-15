@@ -42,6 +42,7 @@ func (client *Client) StartControlConnection(localDb db.LocalDb, isLocal bool) {
 	mutex.Unlock()
 
 	for {
+		log.Println("Here")
 		message, err := proto.ReceiveMessage(conn)
 		if err != nil {
 			if err.Error() == "EOF" {
@@ -50,36 +51,7 @@ func (client *Client) StartControlConnection(localDb db.LocalDb, isLocal bool) {
 			log.Println("Error on control connection ", "Error", err.Error())
 		}
 		if message.MessageType == "init-request" {
-			tunnel := createNewTunnel(message, isLocal)
-			log.Println("Created a new TunnelPort")
-			localConn, localConnErr := createLocalConnection(tunnels.GetLocalServer(message.HostName))
-			if localConnErr != nil {
-				log.Printf("Could not connect to local server on port %d "+
-					"Please check if server is running.\n", tunnels.GetLocalServer(message.HostName).Port)
-				continue
-			}
-			log.Println("Created Local Connection", localConn.RemoteAddr())
-			/*tunnelProcessor := util.NewTeeReader(message.TunnelId, tunnel, localConn, localDb, false,
-			tunnels.GetLocalServer(message.HostName))*/
-			sig := make(chan bool)
-			go func() {
-				log.Println("Reading data form tunnel")
-				//err := tunnelProcessor.TunnelToLocal()
-				_, err := io.Copy(localConn, tunnel)
-				if err != nil && !strings.Contains(err.Error(), "use of closed") {
-					log.Println("Error reading from tunnel ", err.Error())
-				}
-				sig <- true
-			}()
-			//err := tunnelProcessor.LocalToTunnel()
-			_, err := io.Copy(tunnel, localConn)
-			if err != nil && !strings.Contains(err.Error(), "use of closed") {
-				log.Println("Error writing to tunnel ", err.Error())
-			}
-			log.Println("Finished Writing data to tunnel")
-			<-sig
-			close(sig)
-			//closeConnections(localConn, tunnel)
+			go HandleIncomingRequest(message, isLocal)
 		}
 		if message.MessageType == "ack-tunnel-create" {
 			log.Println("Received Ack for creating tunnel from the upstream server")
@@ -87,6 +59,44 @@ func (client *Client) StartControlConnection(localDb db.LocalDb, isLocal bool) {
 			tunnels.UpdateHostNameToPortMap(message.HostName, port)
 		}
 	}
+}
+
+func HandleIncomingRequest(message *proto.Message, isLocal bool) {
+	tunnel := createNewTunnel(message, isLocal)
+	log.Println("Created a new TunnelPort")
+	localConn, localConnErr := createLocalConnection(tunnels.GetLocalServer(message.HostName))
+	if localConnErr != nil {
+		log.Printf("Could not connect to local server on port %d "+
+			"Please check if server is running.\n", tunnels.GetLocalServer(message.HostName).Port)
+		return
+	}
+	log.Println("Created Local Connection", localConn.RemoteAddr())
+	/*tunnelProcessor := util.NewTeeReader(message.TunnelId, tunnel, localConn, localDb, false,
+	tunnels.GetLocalServer(message.HostName))*/
+	sig := make(chan bool)
+	go func() {
+		log.Println("Reading data form tunnel")
+		//err := tunnelProcessor.TunnelToLocal()
+		_, err := io.Copy(localConn, tunnel)
+		if err != nil && !strings.Contains(err.Error(), "use of closed") {
+			log.Println("Error reading from tunnel ", err.Error())
+		}
+		log.Println("Finished writing data from tunnel to local")
+		//sig <- true
+	}()
+	//err := tunnelProcessor.LocalToTunnel()
+	log.Println("Copying from Local to Tunnel")
+	_, err := io.Copy(tunnel, localConn)
+	err = localConn.Close()
+	tunnel.Close()
+	if err != nil && !strings.Contains(err.Error(), "use of closed") {
+		log.Println("Error writing to tunnel ", err.Error())
+	}
+	log.Println("Finished Writing data to tunnel")
+	//<-sig
+	close(sig)
+	log.Println("All Done")
+	closeConnections(localConn, tunnel)
 }
 
 func getControlConnection(isLocal bool) (net.Conn, error) {

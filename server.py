@@ -23,7 +23,7 @@ def get():
             # print(jsonify(request.get_json()))
             # print(request.get_json())
             # print(request.get_data())
-            return hello_world(request)
+            return request.get_json()
         except Exception as e:
             print("Fail ", e)
             return str(e)
@@ -85,4 +85,4 @@ def salesforceoauth():
         return Response("Hello world")
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=3032)
+    app.run(debug=True, host='0.0.0.0', port=5050)

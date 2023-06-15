@@ -38,9 +38,9 @@ func NewTeeReader(requestId string, tunnelConn net.Conn, localConn net.Conn, db 
 }
 
 func (t *TeeReader) TunnelToLocal() error {
-	oneKB := 32 * 1024
-	buf := make([]byte, oneKB)
 	for {
+		oneByte := 1
+		buf := make([]byte, oneByte)
 		nr, err := t.tunnelConn.Read(buf)
 		if err != nil {
 			if err == io.EOF {
@@ -64,9 +64,9 @@ func processTunnelToLocalData(t *TeeReader, buf []byte, numRead int) {
 }
 
 func (t *TeeReader) LocalToTunnel() error {
-	oneKB := 32 * 1024
-	buf := make([]byte, oneKB)
 	for {
+		oneByte := 1
+		buf := make([]byte, oneByte)
 		nr, err := t.localConn.Read(buf)
 		if err != nil {
 			log.Println("Finished reading from local connection")
