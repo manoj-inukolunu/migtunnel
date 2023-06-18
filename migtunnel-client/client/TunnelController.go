@@ -2,13 +2,12 @@ package client
 
 import (
 	"crypto/tls"
-	logrus "github.com/sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 	"golang/migtunnel-client/db"
 	"golang/migtunnel-client/tunnels"
 	"golang/migtunnel-client/util"
 	"golang/proto"
 	"io"
-	"log"
 	"net"
 	"strconv"
 	"strings"
@@ -30,10 +29,10 @@ func init() {
 }
 
 func (client *Client) StartControlConnection(localDb db.LocalDb, isLocal bool) {
-	log.Println("Starting Control connection")
+	log.Infoln("Starting Control connection")
 	conn, err := getControlConnection(isLocal)
 	if err != nil {
-		log.Println("Failed to establish control connection ", "Error", err.Error())
+		log.Errorln("Failed to establish control connection ", "Error", err.Error())
 		panic(err)
 	}
 	mutex := sync.Mutex{}
@@ -45,18 +44,18 @@ func (client *Client) StartControlConnection(localDb db.LocalDb, isLocal bool) {
 	for {
 
 		message, err := proto.ReceiveMessage(conn)
-		logrus.Debugf("Received Message = %s", message)
+		log.Debugf("Received Message = %s", message)
 		if err != nil {
 			if err.Error() == "EOF" {
 				panic("Server closed control connection stopping client now")
 			}
-			log.Println("Error on control connection ", "Error", err.Error())
+			log.Errorln("Error on control connection ", "Error", err.Error())
 		}
 		if message.MessageType == "init-request" {
 			go HandleIncomingRequest(message, isLocal)
 		}
 		if message.MessageType == "ack-tunnel-create" {
-			log.Println("Received Ack for creating tunnel from the upstream server")
+			log.Infoln("Received Ack for creating tunnel from the upstream server")
 			port, _ := strconv.Atoi(string(message.Data))
 			tunnels.UpdateHostNameToPortMap(message.HostName, port)
 		}
@@ -68,36 +67,36 @@ func HandleIncomingRequest(message *proto.Message, isLocal bool) {
 	log.Println("Created a new TunnelPort")
 	localConn, localConnErr := createLocalConnection(tunnels.GetLocalServer(message.HostName))
 	if localConnErr != nil {
-		log.Printf("Could not connect to local server on port %d "+
+		log.Errorf("Could not connect to local server on port %d "+
 			"Please check if server is running.\n", tunnels.GetLocalServer(message.HostName).Port)
 		return
 	}
-	log.Println("Created Local Connection", localConn.RemoteAddr())
+	log.Infoln("Created Local Connection ", localConn.RemoteAddr())
 	/*tunnelProcessor := util.NewTeeReader(message.TunnelId, tunnel, localConn, localDb, false,
 	tunnels.GetLocalServer(message.HostName))*/
 	sig := make(chan bool)
 	go func() {
-		log.Println("Reading data form tunnel")
+		log.Infoln("Reading data form tunnel")
 		//err := tunnelProcessor.TunnelToLocal()
 		_, err := io.Copy(localConn, tunnel)
 		if err != nil && !strings.Contains(err.Error(), "use of closed") {
-			log.Println("Error reading from tunnel ", err.Error())
+			log.Errorln("Error reading from tunnel ", err.Error())
 		}
-		log.Println("Finished writing data from tunnel to local")
+		log.Infoln("Finished writing data from tunnel to local")
 		//sig <- true
 	}()
 	//err := tunnelProcessor.LocalToTunnel()
-	log.Println("Copying from Local to Tunnel")
+	log.Infoln("Copying from Local to Tunnel")
 	_, err := io.Copy(tunnel, localConn)
 	err = localConn.Close()
 	tunnel.Close()
 	if err != nil && !strings.Contains(err.Error(), "use of closed") {
-		log.Println("Error writing to tunnel ", err.Error())
+		log.Errorln("Error writing to tunnel ", err.Error())
 	}
-	log.Println("Finished Writing data to tunnel")
+	log.Infoln("Finished Writing data to tunnel")
 	//<-sig
 	close(sig)
-	log.Println("All Done")
+	log.Debugln("All Done")
 	closeConnections(localConn, tunnel)
 }
 
@@ -118,14 +117,14 @@ func closeConnections(localConn net.Conn, tunnel net.Conn) {
 	if !checkClosed(localConn) {
 		err := localConn.Close()
 		if err != nil && !strings.Contains(err.Error(), "use of closed") {
-			log.Println("Error while closing local connection ", err.Error())
+			log.Errorln("Error while closing local connection ", err.Error())
 			return
 		}
 	}
 	if !checkClosed(tunnel) {
 		err := tunnel.Close()
 		if err != nil && !strings.Contains(err.Error(), "use of closed") {
-			log.Println("Error while closing tunnel connection ", err.Error())
+			log.Errorln("Error while closing tunnel connection ", err.Error())
 			return
 		}
 	}
@@ -135,7 +134,7 @@ func checkClosed(conn net.Conn) bool {
 	one := make([]byte, 1)
 	conn.SetReadDeadline(time.Now())
 	if _, err := conn.Read(one); err == io.EOF {
-		log.Println("Detected closed Local connection")
+		log.Errorln("Detected closed Local connection")
 		conn.Close()
 		return true
 	}
