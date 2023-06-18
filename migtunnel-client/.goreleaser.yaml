@@ -17,7 +17,7 @@ builds:
 
 brews:
   - name: migtunnel
-    homepage: https://github.com/manoj-inukolunu/homebrew-tools
+    homepage: "https://github.com/manoj-inukolunu/homebrew-tools"
     folder: Formula
     url_template: "https://github.com/manoj-inukolunu/migtunnel/releases/download/{{ .Tag }}/{{ .ArtifactName }}"
     tap:
