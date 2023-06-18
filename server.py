@@ -24,4 +24,4 @@ def get():
     return resp
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=3031)
+    app.run(debug=True, host='0.0.0.0', port=3030)
