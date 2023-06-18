@@ -13,8 +13,6 @@ builds:
       - linux
       - darwin
 
-
-
 brews:
   - name: migtunnel
     homepage: "https://github.com/manoj-inukolunu/homebrew-tools"
@@ -23,6 +21,11 @@ brews:
     tap:
       owner: manoj-inukolunu
       name: homebrew-tools
+    commit_author:
+      name: manoj-inukolunu
+      email: manoj.inukolunu.1989@gmail.com
+    skip_upload: false
+
 
 archives:
   - format: tar.gz
