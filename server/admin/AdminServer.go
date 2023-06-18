@@ -23,9 +23,11 @@ func (s *Server) Start() {
 		}
 	})
 
+	log.Println("Starting admin server on port=", 8090)
+
 	err := http.ListenAndServe(":8090", nil)
 	if err != nil {
-		log.Printf("Could not start admin server on port=%s  error=%s\n", 8090, err)
+		log.Printf("Could not start ui server on port=%s  error=%s\n", 8090, err)
 		panic(err)
 	}
 	log.Println("Started Admin ControlManager on ", 8090)

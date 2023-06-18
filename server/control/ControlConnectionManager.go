@@ -45,6 +45,7 @@ func (a *ControlManager) CheckConnections() {
 }
 
 func (c *ControlManager) Start() {
+	log.Println("Starting Control  server on port=", c.ControlServerPort)
 	var listener net.Listener
 	var err error
 	addr := ":" + strconv.Itoa(c.ControlServerPort)

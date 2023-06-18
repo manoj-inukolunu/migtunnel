@@ -5,6 +5,8 @@
 *.so
 *.dylib
 
+migtunnel-client/migtunnel
+
 __pycache__/
 
 client/client
