@@ -2,7 +2,7 @@ package client
 
 import (
 	"crypto/tls"
-	log "github.com/sirupsen/logrus"
+	logrus "github.com/sirupsen/logrus"
 	"golang/migtunnel-client/db"
 	"golang/migtunnel-client/tunnels"
 	"golang/migtunnel-client/util"
@@ -45,7 +45,7 @@ func (client *Client) StartControlConnection(localDb db.LocalDb, isLocal bool) {
 	for {
 
 		message, err := proto.ReceiveMessage(conn)
-		log.Debugf("Received Message = %s", message)
+		logrus.Debugf("Received Message = %s", message)
 		if err != nil {
 			if err.Error() == "EOF" {
 				panic("Server closed control connection stopping client now")
