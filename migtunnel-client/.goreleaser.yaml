@@ -15,6 +15,7 @@ builds:
 
 brews:
   - name: migtunnel
+    description: "Tunneling tool like ngrok and localtunnel"
     homepage: "https://github.com/manoj-inukolunu/homebrew-tools"
     folder: Formula
     url_template: "https://github.com/manoj-inukolunu/migtunnel/releases/download/{{ .Tag }}/{{ .ArtifactName }}"
