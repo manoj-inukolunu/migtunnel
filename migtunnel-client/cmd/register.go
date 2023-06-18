@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"github.com/google/uuid"
 	"github.com/spf13/cobra"
-	"golang/jtunnel-client/data"
-	"golang/jtunnel-client/util"
+	"golang/migtunnel-client/data"
+	"golang/migtunnel-client/util"
 )
 
 var hostName string

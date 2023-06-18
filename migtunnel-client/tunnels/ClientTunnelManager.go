@@ -2,7 +2,7 @@ package tunnels
 
 import (
 	"errors"
-	"golang/jtunnel-client/data"
+	"golang/migtunnel-client/data"
 	"golang/proto"
 	"log"
 	"net"

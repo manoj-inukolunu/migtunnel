@@ -5,7 +5,7 @@ import (
 	"compress/gzip"
 	"database/sql"
 	_ "embed"
-	"golang/jtunnel-client/data"
+	"golang/migtunnel-client/data"
 	"io"
 	"log"
 	_ "modernc.org/sqlite"

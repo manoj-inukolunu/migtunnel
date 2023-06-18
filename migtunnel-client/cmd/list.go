@@ -3,7 +3,7 @@ package cmd
 import (
 	"fmt"
 	"github.com/spf13/cobra"
-	"golang/jtunnel-client/util"
+	"golang/migtunnel-client/util"
 )
 
 var adminPort int16

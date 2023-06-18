@@ -1,9 +1,9 @@
 package util
 
 import (
-	"golang/jtunnel-client/data"
-	"golang/jtunnel-client/db"
-	"golang/jtunnel-client/tunnels"
+	"golang/migtunnel-client/data"
+	"golang/migtunnel-client/db"
+	"golang/migtunnel-client/tunnels"
 	"io"
 	"log"
 	"net"

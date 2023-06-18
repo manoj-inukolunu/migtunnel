@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"github.com/google/uuid"
-	"golang/jtunnel-client/data"
+	"golang/migtunnel-client/data"
 	"net/http"
 	"strconv"
 )

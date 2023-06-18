@@ -5,9 +5,9 @@ import (
 	markdown "github.com/MichaelMure/go-term-markdown"
 	"github.com/spf13/cobra"
 	"github.com/thejerf/suture/v4"
-	"golang/jtunnel-client/client"
-	"golang/jtunnel-client/data"
-	"golang/jtunnel-client/db"
+	"golang/migtunnel-client/client"
+	"golang/migtunnel-client/data"
+	"golang/migtunnel-client/db"
 	"log"
 )
 

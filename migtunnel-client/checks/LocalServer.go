@@ -1,7 +1,7 @@
 package checks
 
 import (
-	"golang/jtunnel-client/tunnels"
+	"golang/migtunnel-client/tunnels"
 	"log"
 	"net"
 	"time"

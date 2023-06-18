@@ -1,6 +1,6 @@
-Welcome to JTunnel .
+Welcome to MigTunnel .
 
-Source code is at `https://github.com/manoj-inukolunu/jtunnel-go`
+Source code is at `https://github.com/manoj-inukolunu/migtunnel`
 
 To create a new tunnel
 

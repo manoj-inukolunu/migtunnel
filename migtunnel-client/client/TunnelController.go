@@ -2,9 +2,9 @@ package client
 
 import (
 	"crypto/tls"
-	"golang/jtunnel-client/db"
-	"golang/jtunnel-client/tunnels"
-	"golang/jtunnel-client/util"
+	"golang/migtunnel-client/db"
+	"golang/migtunnel-client/tunnels"
+	"golang/migtunnel-client/util"
 	"golang/proto"
 	"io"
 	"log"
