@@ -13,14 +13,15 @@ builds:
       - linux
       - darwin
 
+
+
 brews:
-  - name: jtunnel
+  - name: migtunnel
     homepage: https://github.com/manoj-inukolunu/homebrew-tools
-    url_template: "https://github.com/manoj-inukolunu/jtunnel-go/releases/download/{{ .Tag }}/{{ .ArtifactName }}"
+    url_template: "https://github.com/manoj-inukolunu/migtunnel/releases/download/{{ .Tag }}/{{ .ArtifactName }}"
     tap:
       owner: manoj-inukolunu
       name: homebrew-tools
-
 
 archives:
   - format: tar.gz
