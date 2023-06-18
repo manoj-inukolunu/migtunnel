@@ -7,7 +7,7 @@ import (
 )
 
 var rootCmd = &cobra.Command{
-	Use:   "jtunnel",
+	Use:   "migtunnel",
 	Short: "Expose Local Server to the internet",
 }
 

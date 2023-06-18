@@ -20,7 +20,7 @@ var listCmd = &cobra.Command{
 		adminUrl := fmt.Sprintf("http://localhost:%d/list", adminPort)
 		allTunnels, err := util.GetTunnels(adminUrl)
 		if err != nil {
-			cmd.Println("Unable to list tunnels , please check if jtunnel is up and "+
+			cmd.Println("Unable to list tunnels , please check if migtunnel is up and "+
 				"ui server is running on port ", adminPort)
 		}
 		cmd.Println(allTunnels)

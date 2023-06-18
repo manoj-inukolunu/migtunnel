@@ -110,7 +110,7 @@ func (client *Client) StartAdminServer() {
 		}
 
 	})
-	fs := http.FileServer(http.Dir("./jtunnel-client/client/ui/"))
+	fs := http.FileServer(http.Dir("./migtunnel-client/client/ui/"))
 	http.Handle("/", http.StripPrefix("/ui", fs))
 	err := http.ListenAndServe(":"+strconv.Itoa(int(client.ClientConfig.AdminPort)), nil)
 	if err != nil {

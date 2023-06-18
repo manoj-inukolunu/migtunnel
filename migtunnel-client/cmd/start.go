@@ -16,7 +16,7 @@ var isLocal bool
 
 var startCmd = &cobra.Command{
 	Use:   "start",
-	Short: "Starts jtunnel",
+	Short: "Starts migtunnel",
 	Long:  ``,
 	Run: func(cmd *cobra.Command, args []string) {
 		supervisor := suture.NewSimple("Client")
@@ -29,7 +29,7 @@ var startCmd = &cobra.Command{
 	},
 }
 
-const usage = "Welcome to JTunnel .\n\nSource code is at `https://github.com/manoj-inukolunu/jtunnel-go`\n\nTo create a new tunnel\n\nMake a `POST` request to `client://127.0.0.1:1234/create`\nwith the payload\n\n```\n{\n    \"HostName\":\"myhost\",\n    \"TunnelName\":\"TunnelPort Name\",\n    \"localServerPort\":\"3131\"\n}\n\n```\n\nThe endpoint you get is `https://myhost.migtunnel.net`\n\nAll the requests to `https://myhost.migtunnel.net` will now\n\nbe routed to your server running on port `3131`\n\n"
+const usage = "Welcome to MigTunnel .\n\nSource code is at `https://github.com/manoj-inukolunu/migtunnel`\n\nTo create a new tunnel\n\nMake a `POST` request to `client://127.0.0.1:1234/create`\nwith the payload\n\n```\n{\n    \"HostName\":\"myhost\",\n    \"TunnelName\":\"TunnelPort Name\",\n    \"localServerPort\":\"3131\"\n}\n\n```\n\nThe endpoint you get is `https://myhost.migtunnel.net`\n\nAll the requests to `https://myhost.migtunnel.net` will now\n\nbe routed to your server running on port `3131`\n\n"
 
 type Main struct {
 	cmd *cobra.Command
