@@ -3,6 +3,7 @@ package http
 import (
 	"github.com/google/uuid"
 	"github.com/inconshreveable/go-vhost"
+	"golang/common"
 	"golang/proto"
 	"golang/server/control"
 	"golang/server/tunnel-manager"
@@ -52,38 +53,42 @@ func (s *Server) handleIncomingHttpRequest(conn net.Conn, id string) {
 			// new connection created between client and server
 			// copy data between source connection and client connection in a new go routine
 			//sigC := make(chan bool)
+			serverToClient := common.TeeTunnel{
+				Src: vhostConn,
+				Dst: clientConn,
+			}
+			clientToServer := common.TeeTunnel{Src: clientConn, Dst: vhostConn}
 			go func() {
-				_, err := io.Copy(clientConn, vhostConn)
+				err := serverToClient.CopySrcToDest()
 				if err != nil {
-					util.LogWithPrefix(id, "Failed to copy data from http to client "+err.Error())
+					if err != io.EOF {
+						util.LogWithPrefix(id, "Failed to copy data from http to client "+err.Error())
+					}
 				}
 				util.LogWithPrefix(id, "Finished copying from server to client")
 				/*sigC <- true*/
 			}()
 			// copy data between client connection and source connections
-			_, err := io.Copy(vhostConn, clientConn)
+			err := clientToServer.CopySrcToDest()
 			util.LogWithPrefix(id, "Finished copying from client to server")
 			/*<-sigC*/
 			if err != nil {
-				util.LogWithPrefix(id, "Failed "+err.Error())
+				if err != io.EOF {
+					util.LogWithPrefix(id, "Failed "+err.Error())
+				}
 				s.TunnelManager.RemoveTunnelConnection(id)
 				break
 			}
 			util.LogWithPrefix(id, "Copy Done")
 			// close client tunnel connection
 			clientConnError := clientConn.Close()
-			if clientConnError != nil {
+			if clientConnError != nil && clientConnError != io.EOF {
 				util.LogWithPrefix(id, "Failed to close Client Tunnel Connection "+clientConnError.Error())
 			}
 			//close http connection
 			vHostConnError := vhostConn.Close()
-			if vHostConnError != nil {
+			if vHostConnError != nil && vHostConnError != io.EOF {
 				util.LogWithPrefix(id, "Failed to close vhost Http Connection "+vHostConnError.Error())
-			}
-			//close http connection
-			connError := conn.Close()
-			if connError != nil {
-				util.LogWithPrefix(id, "Failed to close Http Connection "+connError.Error())
 			}
 			s.cleanUp(id)
 			s.TunnelManager.RemoveTunnelConnection(id)
