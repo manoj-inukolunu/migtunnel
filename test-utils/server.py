@@ -1,7 +1,3 @@
-import json
-import random
-
-import requests
 from flask import Flask
 from flask import Response
 from flask import request
@@ -20,8 +16,11 @@ def get():
             return str(e)
     print(request.headers.keys())
     print(request.headers)
-    resp = Response("Hello World!!!")
+    resp = Response("Hello World!!! the response")
+    resp.headers.add_header("Response", "check")
     return resp
 
+
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=3030)
+    context = ('server.crt', 'server.key')
+    app.run(debug=True, host='0.0.0.0', port=8080, ssl_context=context)

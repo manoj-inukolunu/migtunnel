@@ -3,6 +3,7 @@ package client
 import (
 	"crypto/tls"
 	log "github.com/sirupsen/logrus"
+	"golang/common"
 	"golang/migtunnel-client/db"
 	"golang/migtunnel-client/tunnels"
 	"golang/migtunnel-client/util"
@@ -75,10 +76,19 @@ func HandleIncomingRequest(message *proto.Message, isLocal bool) {
 	/*tunnelProcessor := util.NewTeeReader(message.TunnelId, tunnel, localConn, localDb, false,
 	tunnels.GetLocalServer(message.HostName))*/
 	sig := make(chan bool)
+	tunnelToLocal := common.TeeTunnel{
+		Src: tunnel,
+		Dst: localConn,
+	}
+	localToTunnel := common.TeeTunnel{
+		Src: localConn,
+		Dst: tunnel,
+	}
 	go func() {
 		log.Infoln("Reading data form tunnel")
 		//err := tunnelProcessor.TunnelToLocal()
-		_, err := io.Copy(localConn, tunnel)
+		/*_, err := io.Copy(localConn, tunnel)*/
+		err := tunnelToLocal.CopySrcToDest()
 		if err != nil && !strings.Contains(err.Error(), "use of closed") {
 			log.Errorln("Error reading from tunnel ", err.Error())
 		}
@@ -87,7 +97,8 @@ func HandleIncomingRequest(message *proto.Message, isLocal bool) {
 	}()
 	//err := tunnelProcessor.LocalToTunnel()
 	log.Infoln("Copying from Local to Tunnel")
-	_, err := io.Copy(tunnel, localConn)
+	//_, err := io.Copy(tunnel, localConn)
+	err := localToTunnel.CopySrcToDest()
 	err = localConn.Close()
 	tunnel.Close()
 	if err != nil && !strings.Contains(err.Error(), "use of closed") {
