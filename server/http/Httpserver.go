@@ -41,7 +41,12 @@ func (s *Server) handleIncomingHttpRequest(conn net.Conn, id string) {
 		util.LogWithPrefix(id, "Not a valid client connection"+err.Error())
 	}
 	util.LogWithPrefix(id, "Converted from conn to vhostConn "+vhostConn.RemoteAddr().String())
-	s.ControlManager.SendMessage(*proto.NewMessage(vhostConn.Host(), id, "init-request", []byte(id)))
+	if sent := s.ControlManager.SendMessage(*proto.NewMessage(vhostConn.Host(), id, "init-request", []byte(id))); sent != nil {
+		util.LogWithPrefix(id, sent.Error())
+		util.LogWithPrefix(id, "Closing Connection")
+		conn.Close()
+		return
+	}
 	//wait until tunnelConnections has id
 	sig := make(chan bool)
 	defer close(sig)

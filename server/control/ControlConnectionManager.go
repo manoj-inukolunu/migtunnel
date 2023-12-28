@@ -2,6 +2,7 @@ package control
 
 import (
 	"crypto/tls"
+	"errors"
 	"golang/proto"
 	"io"
 	"log"
@@ -134,18 +135,19 @@ func (a *ControlManager) GetControlConnection(hostName string) (net.Conn, bool) 
 	return nil, false
 }
 
-func (a *ControlManager) SendMessage(message proto.Message) {
+func (a *ControlManager) SendMessage(message proto.Message) error {
 	controlConnection, ok := a.GetControlConnection(message.HostName)
 	if !ok {
 		log.Println("Control Connection not found for host=", message.HostName)
-		return
+		return errors.New("Control Connection not found for host=" + message.HostName)
 	}
 	log.Println("Found control connection ")
 	err := proto.SendMessage(&message, controlConnection)
 	if err != nil {
 		log.Println("Could not send message to client connection for host", message.HostName)
-		return
+		return errors.New("Could not send message to client connection for host = " + message.HostName)
 	}
+	return nil
 }
 
 func (a *ControlManager) saveControlConnection(hostName string, conn net.Conn) {
